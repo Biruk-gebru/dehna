@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { db, DEFAULT_PREFERENCES } from '@/lib/db';
 import type { UserPreferences } from '@/types';
 
 interface PrefsContextValue {
@@ -19,22 +18,32 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let settled = false;
 
-    const resolve = (existing?: UserPreferences) => {
-      if (settled) return;
-      settled = true;
-      const now = new Date().toISOString();
-      setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
-      setLoading(false);
-    };
+    // Bail after 3 s if IDB hangs (can happen on Safari first access).
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        setLoading(false);
+      }
+    }, 3000);
 
-    // Safari's IndexedDB can hang silently on first access; bail after 3 s.
-    const timeout = setTimeout(() => resolve(), 3000);
-
-    db.preferences
-      .get(1)
-      .then((existing) => resolve(existing))
-      .catch(() => resolve())
-      .finally(() => clearTimeout(timeout));
+    import('@/lib/db')
+      .then(({ db, DEFAULT_PREFERENCES }) => {
+        return db.preferences.get(1).then((existing) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          const now = new Date().toISOString();
+          setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
+          setLoading(false);
+        });
+      })
+      .catch(() => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timeout);
+          setLoading(false);
+        }
+      });
 
     return () => {
       settled = true;
@@ -45,6 +54,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   const updatePrefs = useCallback(
     async (updates: Partial<Omit<UserPreferences, 'id' | 'createdAt'>>) => {
       const now = new Date().toISOString();
+      const { db, DEFAULT_PREFERENCES } = await import('@/lib/db');
       const existing = await db.preferences.get(1);
       const base = existing ?? { ...DEFAULT_PREFERENCES, createdAt: now };
       const updated = { ...base, ...updates, updatedAt: now };
