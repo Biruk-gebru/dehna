@@ -3,9 +3,9 @@
 import Link from 'next/link';
 
 const FEATURES = [
-  '40 exercises across eyes, back, neck, shoulders, wrists, and more',
-  'Set your own break frequency and target areas',
-  'Works offline — nothing leaves your device',
+  { label: 'Eyes', desc: '5 exercises for screen fatigue' },
+  { label: 'Back & neck', desc: 'Stretch and mobilise the desk posture' },
+  { label: 'Wrists', desc: 'Counter repetitive strain from typing' },
 ];
 
 export default function Home() {
@@ -13,14 +13,13 @@ export default function Home() {
     <main
       style={{
         minHeight: '100vh',
-        backgroundColor: '#d3643b',
+        backgroundColor: '#f5f3ef',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        overflow: 'hidden',
       }}
     >
-      {/* Grain texture overlay */}
+      {/* Grain — barely visible on light bg, adds warmth */}
       <svg
         aria-hidden="true"
         style={{
@@ -30,21 +29,15 @@ export default function Home() {
           height: '100%',
           pointerEvents: 'none',
           zIndex: 0,
-          opacity: 0.09,
+          opacity: 0.045,
         }}
       >
         <filter id="lp-grain">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.68"
-            numOctaves="3"
-            stitchTiles="stitch"
-          />
+          <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="3" stitchTiles="stitch" />
         </filter>
         <rect width="100%" height="100%" filter="url(#lp-grain)" />
       </svg>
 
-      {/* Content above grain */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
 
         {/* Nav */}
@@ -54,28 +47,41 @@ export default function Home() {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: 'var(--space-5) var(--space-6)',
+            borderBottom: '1px solid #e8e4de',
           }}
         >
           <span
             style={{
               fontWeight: 'var(--font-weight-bold)',
-              fontSize: 'var(--font-size-lg)',
-              color: '#fff',
+              fontSize: 'var(--font-size-base)',
+              color: '#1c1510',
               letterSpacing: '-0.01em',
             }}
           >
             ደህና
           </span>
-          <Link
-            href="/exercises"
-            style={{
-              fontSize: 'var(--font-size-sm)',
-              color: 'rgba(255,255,255,0.7)',
-              textDecoration: 'none',
-            }}
-          >
-            Exercises
-          </Link>
+          <div style={{ display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
+            <Link
+              href="/exercises"
+              style={{ fontSize: 'var(--font-size-sm)', color: '#7a746a', textDecoration: 'none' }}
+            >
+              Exercises
+            </Link>
+            <Link
+              href="/onboarding"
+              style={{
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: '#fff',
+                backgroundColor: '#d3643b',
+                padding: '7px 16px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+              }}
+            >
+              Get started
+            </Link>
+          </div>
         </nav>
 
         {/* Hero */}
@@ -84,120 +90,136 @@ export default function Home() {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
+            alignItems: 'center',
             justifyContent: 'center',
-            padding: 'var(--space-6)',
-            maxWidth: 560,
-            width: '100%',
-            margin: '0 auto',
+            textAlign: 'center',
+            padding: 'var(--space-8) var(--space-6)',
             gap: 'var(--space-6)',
           }}
         >
-          {/* Heading block */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)', maxWidth: 540 }}>
             <h1
               style={{
-                fontSize: 'clamp(2.6rem, 10vw, 4.2rem)',
+                fontSize: 'clamp(2.4rem, 9vw, 4rem)',
                 fontWeight: 'var(--font-weight-bold)',
-                color: '#fff',
+                color: '#1c1510',
                 lineHeight: 1.05,
                 margin: 0,
-                letterSpacing: '-0.025em',
+                letterSpacing: '-0.03em',
               }}
             >
-              Move a little.
+              Desk work is hard
               <br />
-              Feel a lot better.
+              on your body.
             </h1>
-
-            {/* Divider */}
-            <div
-              style={{
-                width: 48,
-                height: 2,
-                backgroundColor: 'rgba(255,255,255,0.35)',
-                borderRadius: 1,
-              }}
-            />
-
             <p
               style={{
                 fontSize: 'var(--font-size-lg)',
-                color: 'rgba(255,255,255,0.82)',
+                color: '#7a746a',
                 lineHeight: 'var(--line-height-relaxed)',
                 margin: 0,
-                maxWidth: 380,
+                maxWidth: 400,
               }}
             >
-              Guided micro-breaks for desk workers, tailored to where you ache.
+              Dehna gives you short, guided movement breaks tailored to where you ache — eyes, back, neck, wrists.
             </p>
           </div>
 
-          {/* CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
+          {/* CTA row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)', flexWrap: 'wrap', justifyContent: 'center' }}>
             <Link
               href="/onboarding"
               style={{
                 display: 'inline-block',
-                padding: '13px 28px',
-                backgroundColor: '#fff',
-                color: '#b8522d',
+                padding: '14px 32px',
+                backgroundColor: '#d3643b',
+                color: '#fff',
                 fontSize: 'var(--font-size-base)',
                 fontWeight: 'var(--font-weight-medium)',
                 borderRadius: '8px',
                 textDecoration: 'none',
-                transition: 'background-color 0.15s, color 0.15s',
               }}
             >
-              Get started
+              Start for free
             </Link>
             <Link
               href="/exercises"
               style={{
                 fontSize: 'var(--font-size-base)',
-                color: 'rgba(255,255,255,0.85)',
+                color: '#7a746a',
                 textDecoration: 'none',
-                fontWeight: 'var(--font-weight-medium)',
               }}
             >
               Browse exercises →
             </Link>
           </div>
 
-          {/* Feature list */}
-          <ul
+          {/* Divider */}
+          <div style={{ width: '100%', maxWidth: 480, height: 1, backgroundColor: '#e8e4de' }} />
+
+          {/* Feature trio */}
+          <div
             style={{
-              listStyle: 'none',
-              margin: 0,
-              padding: 0,
               display: 'flex',
               flexDirection: 'column',
-              gap: 'var(--space-2)',
+              gap: 'var(--space-3)',
+              width: '100%',
+              maxWidth: 400,
             }}
           >
-            {FEATURES.map((line) => (
-              <li
-                key={line}
+            {FEATURES.map(({ label, desc }) => (
+              <div
+                key={label}
                 style={{
-                  fontSize: 'var(--font-size-sm)',
-                  color: 'rgba(255,255,255,0.6)',
-                  paddingLeft: 'var(--space-4)',
-                  position: 'relative',
-                  lineHeight: 'var(--line-height-relaxed)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  gap: 'var(--space-4)',
                 }}
               >
                 <span
                   style={{
-                    position: 'absolute',
-                    left: 0,
-                    color: 'rgba(255,255,255,0.4)',
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 'var(--font-weight-medium)',
+                    color: '#1c1510',
+                    flexShrink: 0,
                   }}
                 >
-                  –
+                  {label}
                 </span>
-                {line}
-              </li>
+                <span
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: '#e8e4de',
+                    alignSelf: 'center',
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    color: '#7a746a',
+                    textAlign: 'right',
+                    flexShrink: 0,
+                    maxWidth: 200,
+                  }}
+                >
+                  {desc}
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
+
+          {/* Footer note */}
+          <p
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              color: '#b0a898',
+              margin: 0,
+            }}
+          >
+            Works offline · nothing leaves your device · free forever
+          </p>
         </div>
       </div>
     </main>
