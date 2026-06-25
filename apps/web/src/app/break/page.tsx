@@ -1,4 +1,5 @@
-// TODO: break / exercise routine screen
+import { redirect } from 'next/navigation';
+
 export default function BreakPage() {
-  return <div />;
+  redirect('/work');
 }

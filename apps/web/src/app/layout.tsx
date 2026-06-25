@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google';
 import '../styles/globals.css';
 import { ThemeSync } from '@/components/layout/ThemeSync';
 import { ServiceWorkerReg } from '@/components/layout/ServiceWorkerReg';
+import { InstallPrompt } from '@/components/layout/InstallPrompt';
 
 const bricolage = Bricolage_Grotesque({
   variable: '--font-bricolage',
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeSync />
         <ServiceWorkerReg />
+        <InstallPrompt />
         {children}
       </body>
     </html>

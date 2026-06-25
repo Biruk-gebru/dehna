@@ -195,28 +195,28 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Notifications */}
+      {/* Notifications & sound */}
       <section style={sectionStyle}>
-        <h2 style={headingStyle}>Notifications</h2>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            maxWidth: 400,
-          }}
-        >
-          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)' }}>
-            Notify when break starts
-          </span>
-          <input
-            type="checkbox"
-            checked={prefs.notificationsEnabled}
-            onChange={(e) => save({ notificationsEnabled: e.target.checked })}
-            style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-          />
-        </label>
+        <h2 style={headingStyle}>Alerts</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: 400 }}>
+          {([
+            { key: 'notificationsEnabled', label: 'Notify when break starts' },
+            { key: 'soundEnabled',         label: 'Play chime when break starts' },
+          ] as const).map(({ key, label }) => (
+            <label
+              key={key}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)' }}>{label}</span>
+              <input
+                type="checkbox"
+                checked={prefs[key]}
+                onChange={(e) => save({ [key]: e.target.checked })}
+                style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+              />
+            </label>
+          ))}
+        </div>
       </section>
 
       {/* Data */}

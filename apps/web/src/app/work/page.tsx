@@ -6,7 +6,7 @@ import { usePreferences } from '@/hooks/usePreferences';
 import { useTimer } from '@/hooks/useTimer';
 import { useExercises } from '@/hooks/useExercises';
 import { useSessionHistory } from '@/hooks/useSessionHistory';
-import { notify, requestNotificationPermission } from '@/lib/notifications';
+import { notify, playChime, requestNotificationPermission } from '@/lib/notifications';
 import { TimerRing } from '@/components/timer/TimerRing';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { TimerControls } from '@/components/timer/TimerControls';
@@ -31,6 +31,7 @@ export default function WorkPage() {
     const newRoutine = generateRoutine(hoursWorked);
     setRoutine(newRoutine);
     setMode('break');
+    if (prefs?.soundEnabled) playChime();
     notify('Time for a break!', { body: 'A short movement break is ready.' });
   }, [generateRoutine]);
 
