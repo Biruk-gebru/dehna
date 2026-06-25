@@ -1,0 +1,754 @@
+[
+  {
+    "id": "back-cat-cow-01",
+    "name": "Seated Cat-Cow",
+    "description": "A gentle spinal mobilization that relieves tension through the whole back.",
+    "targetAreas": [
+      "back"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Sit upright at the edge of your seat with feet flat on the floor.",
+      "Inhale and arch your back, lifting your chest and drawing your shoulders back (Cow).",
+      "Exhale and round your spine, tucking your chin and drawing your belly in (Cat).",
+      "Repeat slowly 6–8 times, moving with your breath."
+    ],
+    "tips": [
+      "Move at the speed of your breath — let the movement be fluid, not forced."
+    ]
+  },
+  {
+    "id": "back-thoracic-rotation-01",
+    "name": "Seated Thoracic Rotation",
+    "description": "Opens the mid-back and counters the forward hunch of desk posture.",
+    "targetAreas": [
+      "back",
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Sit tall and cross both arms over your chest.",
+      "Keeping your hips facing forward, slowly rotate your upper body to the right as far as comfortable.",
+      "Hold for 2 seconds, then rotate to the left.",
+      "Repeat 5 times on each side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "back-side-bend-01",
+    "name": "Seated Side Bend",
+    "description": "Stretches the lateral muscles along the torso.",
+    "targetAreas": [
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit upright with feet flat on the floor.",
+      "Raise your right arm overhead and lean gently to the left.",
+      "Hold for 15 seconds, feeling the stretch along your right side.",
+      "Switch sides and repeat."
+    ],
+    "tips": []
+  },
+  {
+    "id": "back-spinal-twist-01",
+    "name": "Seated Spinal Twist",
+    "description": "A deep rotation that releases tension throughout the spine.",
+    "targetAreas": [
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit tall with feet flat on the floor.",
+      "Place your right hand on the outside of your left knee and your left hand on the back of the chair.",
+      "Inhale to lengthen your spine, then exhale and gently twist to the left.",
+      "Hold for 15 seconds then repeat on the other side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "back-extension-01",
+    "name": "Standing Back Extension",
+    "description": "Counteracts spinal flexion from prolonged sitting.",
+    "targetAreas": [
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Stand up and place both hands on your lower back with fingers pointing down.",
+      "Gently lean backward, looking upward, feeling a stretch through the front of your torso.",
+      "Hold for 3 seconds, then return to upright.",
+      "Repeat 5 times."
+    ],
+    "tips": [
+      "If you feel any pinching, reduce the range of motion."
+    ]
+  },
+  {
+    "id": "back-chest-opener-01",
+    "name": "Chest Opener",
+    "description": "Opens the chest and front shoulders, countering forward rounding.",
+    "targetAreas": [
+      "back",
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Stand or sit tall.",
+      "Clasp your hands behind your back with arms straightened.",
+      "Squeeze your shoulder blades together and gently lift your clasped hands away from your body.",
+      "Hold for 20 seconds, breathing deeply."
+    ],
+    "tips": []
+  },
+  {
+    "id": "back-forward-fold-01",
+    "name": "Desk Forward Fold",
+    "description": "Lengthens the entire spine using your desk for support.",
+    "targetAreas": [
+      "back",
+      "legs"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Stand facing your desk, feet hip-width apart.",
+      "Walk your feet back until your body forms an L-shape, hands resting on the desk surface.",
+      "Let your head drop between your arms and allow your spine to lengthen.",
+      "Hold for 30 seconds, breathing steadily."
+    ],
+    "tips": []
+  },
+  {
+    "id": "neck-side-tilt-01",
+    "name": "Neck Side Tilt",
+    "description": "Releases tension in the lateral neck and upper trapezius.",
+    "targetAreas": [
+      "neck",
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit or stand tall, looking straight ahead.",
+      "Slowly tilt your right ear toward your right shoulder until you feel a gentle stretch on the left side of your neck.",
+      "Hold for 15 seconds.",
+      "Return to center and repeat on the left side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "neck-chin-tuck-01",
+    "name": "Chin Tuck",
+    "description": "Corrects forward head posture — the most common desk worker issue.",
+    "targetAreas": [
+      "neck"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Sit tall with shoulders relaxed.",
+      "Without moving your shoulders, gently draw your chin straight back as if making a double chin.",
+      "Hold for 5 seconds, then release.",
+      "Repeat 8 times."
+    ],
+    "tips": [
+      "Keep your gaze level — don't tuck your chin down to your chest."
+    ]
+  },
+  {
+    "id": "neck-rotation-01",
+    "name": "Neck Rotation",
+    "description": "Restores range of motion in the cervical spine.",
+    "targetAreas": [
+      "neck"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Sit tall with shoulders relaxed.",
+      "Slowly turn your head to the right, looking over your shoulder as far as comfortable.",
+      "Hold for 5 seconds, then return to center.",
+      "Repeat on the left — 4 repetitions each side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "neck-upper-trap-01",
+    "name": "Upper Trapezius Stretch",
+    "description": "Targets the upper trapezius, a common tension hotspot.",
+    "targetAreas": [
+      "neck",
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit tall and reach your right hand under your chair, gripping the seat firmly.",
+      "Tilt your left ear toward your left shoulder.",
+      "For a deeper stretch, gently add light pressure with your left hand on the right side of your head.",
+      "Hold 20 seconds each side."
+    ],
+    "tips": [
+      "Keep the gripping arm straight and shoulder pulled down throughout."
+    ]
+  },
+  {
+    "id": "neck-levator-scap-01",
+    "name": "Levator Scapulae Stretch",
+    "description": "Releases the muscle that often tightens from screen use and stress.",
+    "targetAreas": [
+      "neck",
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit tall and place your right hand gently behind your head.",
+      "Look down toward your left knee, tucking your chin slightly.",
+      "Add gentle pressure with your right hand until you feel a stretch in the right side of your neck.",
+      "Hold 20 seconds, then switch sides."
+    ],
+    "tips": []
+  },
+  {
+    "id": "shoulder-rolls-01",
+    "name": "Shoulder Rolls",
+    "description": "Mobilizes and loosens the shoulder girdle.",
+    "targetAreas": [
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Sit or stand tall with arms loose at your sides.",
+      "Slowly roll both shoulders forward in large circles 5 times.",
+      "Reverse direction and roll backward 5 times.",
+      "Focus on moving through the full range of motion."
+    ],
+    "tips": []
+  },
+  {
+    "id": "shoulder-scapular-squeeze-01",
+    "name": "Scapular Squeeze",
+    "description": "Activates the rhomboids and mid-traps to improve posture.",
+    "targetAreas": [
+      "shoulders",
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "strength",
+    "steps": [
+      "Sit tall with arms at your sides and elbows bent to 90 degrees.",
+      "Gently squeeze your shoulder blades toward each other, as if holding a pencil between them.",
+      "Hold for 5 seconds, then release.",
+      "Repeat 10 times."
+    ],
+    "tips": [
+      "Keep your shoulders away from your ears throughout."
+    ]
+  },
+  {
+    "id": "shoulder-cross-body-01",
+    "name": "Cross-Body Shoulder Stretch",
+    "description": "Targets the posterior deltoid and rotator cuff.",
+    "targetAreas": [
+      "shoulders"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Bring your right arm across your body at shoulder height.",
+      "Use your left forearm to gently press the right arm closer to your chest.",
+      "Hold for 20 seconds, feeling the stretch in the back of your shoulder.",
+      "Switch arms and repeat."
+    ],
+    "tips": []
+  },
+  {
+    "id": "shoulder-overhead-reach-01",
+    "name": "Overhead Reach",
+    "description": "Decompress the spine and stretch both sides of the torso.",
+    "targetAreas": [
+      "shoulders",
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit or stand tall.",
+      "Raise both arms overhead and interlace your fingers, palms facing up.",
+      "Reach up and slightly to the right to stretch the left side.",
+      "Hold 10 seconds, then shift to the left side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "shoulder-doorframe-01",
+    "name": "Doorframe Chest Stretch",
+    "description": "Opens the pectorals and front shoulders that tighten from keyboard use.",
+    "targetAreas": [
+      "shoulders",
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Stand beside your office wall or in a doorway.",
+      "Place your right forearm on the surface at shoulder height, elbow bent to 90 degrees.",
+      "Step your right foot forward until you feel a stretch across your right chest and front shoulder.",
+      "Hold 20 seconds and switch sides."
+    ],
+    "tips": []
+  },
+  {
+    "id": "wrist-circles-01",
+    "name": "Wrist Circles",
+    "description": "Lubricates the wrist joints and relieves stiffness from typing.",
+    "targetAreas": [
+      "wrists-elbows"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Extend both arms in front of you, hands loosely fisted.",
+      "Rotate both wrists in large circles — 10 times clockwise.",
+      "Reverse direction — 10 times counterclockwise.",
+      "Let the movement be slow and through the full range."
+    ],
+    "tips": []
+  },
+  {
+    "id": "wrist-prayer-01",
+    "name": "Prayer Stretch",
+    "description": "Stretches the wrist flexors, often overworked by typing and mouse use.",
+    "targetAreas": [
+      "wrists-elbows"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Press both palms together in front of your chest, fingers pointing up.",
+      "Slowly lower your joined hands toward your waist while keeping palms pressed together.",
+      "Stop when you feel a stretch through your forearms and wrists.",
+      "Hold for 20 seconds."
+    ],
+    "tips": []
+  },
+  {
+    "id": "wrist-extensor-01",
+    "name": "Extensor Stretch",
+    "description": "Targets the wrist extensors on the back of the forearm.",
+    "targetAreas": [
+      "wrists-elbows"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Extend your right arm forward with palm facing down.",
+      "Use your left hand to gently press the fingers of your right hand downward and toward you.",
+      "Hold for 15 seconds, feeling the stretch along the top of your forearm.",
+      "Switch hands and repeat."
+    ],
+    "tips": []
+  },
+  {
+    "id": "wrist-finger-spreads-01",
+    "name": "Finger Spreads",
+    "description": "Mobilizes the small muscles of the hand.",
+    "targetAreas": [
+      "wrists-elbows"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Hold both hands in front of you, fingers together.",
+      "Spread your fingers as wide apart as possible and hold for 3 seconds.",
+      "Make a loose fist and hold for 3 seconds.",
+      "Repeat 8 times."
+    ],
+    "tips": []
+  },
+  {
+    "id": "wrist-forearm-rotation-01",
+    "name": "Forearm Rotation",
+    "description": "Restores supination/pronation range often limited by desk tasks.",
+    "targetAreas": [
+      "wrists-elbows"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Hold both arms out in front of you, elbows at your sides, palms facing up.",
+      "Slowly rotate both forearms so your palms face down.",
+      "Rotate back to palms up.",
+      "Repeat 10 times slowly, feeling the motion through your forearms."
+    ],
+    "tips": []
+  },
+  {
+    "id": "eyes-20-20-20-01",
+    "name": "20-20-20 Eye Break",
+    "description": "The evidence-based rule for reducing digital eye strain.",
+    "targetAreas": [
+      "eyes"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "eye-break",
+    "steps": [
+      "Look away from your screen and find a point at least 6 meters (20 feet) away.",
+      "Focus your gaze on that distant point for 20 seconds.",
+      "Let your eyes relax — don't force focus, just let them rest on the distance.",
+      "Blink naturally throughout."
+    ],
+    "tips": [
+      "A window view works perfectly for this. The horizon is ideal."
+    ]
+  },
+  {
+    "id": "eyes-palming-01",
+    "name": "Eye Palming",
+    "description": "Rests the eyes in complete darkness to reduce fatigue.",
+    "targetAreas": [
+      "eyes"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "eye-break",
+    "steps": [
+      "Rub your palms together briskly for 5 seconds to warm them.",
+      "Close your eyes and cup your warm palms gently over them without pressing on the eyeballs.",
+      "Breathe slowly and let your eyes rest in the darkness.",
+      "Hold for 30 seconds."
+    ],
+    "tips": []
+  },
+  {
+    "id": "eyes-focus-shift-01",
+    "name": "Focus Shifting",
+    "description": "Exercises the ciliary muscles that control lens focusing.",
+    "targetAreas": [
+      "eyes"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "eye-break",
+    "steps": [
+      "Hold your thumb up about 30 cm from your face.",
+      "Focus clearly on your thumb for 5 seconds.",
+      "Shift your focus to an object across the room for 5 seconds.",
+      "Alternate back and forth 5 times."
+    ],
+    "tips": []
+  },
+  {
+    "id": "eyes-circles-01",
+    "name": "Eye Circles",
+    "description": "Moves the eyes through their full range of motion.",
+    "targetAreas": [
+      "eyes"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "eye-break",
+    "steps": [
+      "Close your eyes or look at a blank wall.",
+      "Without moving your head, slowly roll your eyes in a large clockwise circle.",
+      "Complete 5 full circles clockwise.",
+      "Reverse and complete 5 circles counterclockwise."
+    ],
+    "tips": []
+  },
+  {
+    "id": "eyes-blink-01",
+    "name": "Conscious Blinking",
+    "description": "Restores the tear film — screen use reduces blinking by up to 60%.",
+    "targetAreas": [
+      "eyes"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "eye-break",
+    "steps": [
+      "Look slightly away from your screen or close your eyes.",
+      "Blink slowly and deliberately 10 times, fully closing your eyes each time.",
+      "On the last blink, squeeze your eyes gently shut for 3 seconds.",
+      "Open and look around the room naturally."
+    ],
+    "tips": []
+  },
+  {
+    "id": "hips-seated-hip-flexor-01",
+    "name": "Seated Hip Flexor Stretch",
+    "description": "Counters hip flexor tightening from prolonged sitting.",
+    "targetAreas": [
+      "knees-hips"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Move to the edge of your seat with feet flat on the floor.",
+      "Slide your right foot backward so your right knee drops lower than your hip.",
+      "Sit tall and gently shift your weight forward until you feel a stretch in the front of your right hip.",
+      "Hold 20 seconds each side."
+    ],
+    "tips": [
+      "Maintain an upright torso — don't lean forward at the waist."
+    ]
+  },
+  {
+    "id": "hips-figure-four-01",
+    "name": "Figure Four Hip Stretch",
+    "description": "A seated pigeon pose that releases the glutes and outer hips.",
+    "targetAreas": [
+      "knees-hips",
+      "legs"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Sit tall and place your right ankle on your left knee, letting the right knee drop out to the side.",
+      "For a gentle stretch, simply hold this position upright.",
+      "For a deeper stretch, hinge slightly forward at the hips while keeping your back straight.",
+      "Hold 30 seconds each side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "hips-ankle-circles-01",
+    "name": "Ankle Circles",
+    "description": "Improves ankle mobility and encourages blood flow in the lower legs.",
+    "targetAreas": [
+      "knees-hips",
+      "legs"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Lift your right foot slightly off the floor.",
+      "Rotate your ankle in slow, large circles — 8 times in each direction.",
+      "Lower and switch to the left foot, repeating the same circles."
+    ],
+    "tips": []
+  },
+  {
+    "id": "hips-calf-raises-01",
+    "name": "Standing Calf Raises",
+    "description": "Activates the calf muscle pump to improve blood flow back to the heart.",
+    "targetAreas": [
+      "knees-hips",
+      "legs"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "strength",
+    "steps": [
+      "Stand behind your chair with hands resting on the back for balance.",
+      "Rise slowly onto your toes, lifting your heels as high as comfortable.",
+      "Hold at the top for 1 second, then slowly lower back down.",
+      "Repeat 12–15 times."
+    ],
+    "tips": []
+  },
+  {
+    "id": "hips-hip-circles-01",
+    "name": "Standing Hip Circles",
+    "description": "Loosens the hip joints and lumbar spine.",
+    "targetAreas": [
+      "knees-hips",
+      "back"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "mobility",
+    "steps": [
+      "Stand with feet shoulder-width apart, hands on your hips.",
+      "Make large, slow circles with your hips — as if using a hula hoop.",
+      "Complete 5 circles in one direction.",
+      "Reverse and complete 5 circles the other way."
+    ],
+    "tips": []
+  },
+  {
+    "id": "legs-hamstring-desk-01",
+    "name": "Hamstring Desk Stretch",
+    "description": "Stretches the hamstrings using your desk for support.",
+    "targetAreas": [
+      "legs"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Stand and face your desk.",
+      "Extend your right leg straight and rest your heel on the edge of your desk or a chair seat.",
+      "Stand tall and hinge slightly forward from the hips until you feel a stretch behind your knee.",
+      "Hold 25 seconds each side."
+    ],
+    "tips": [
+      "Keep a slight bend in the raised knee if this feels too intense."
+    ]
+  },
+  {
+    "id": "legs-seated-extension-01",
+    "name": "Seated Leg Extensions",
+    "description": "Activates the quadriceps and promotes circulation in the legs.",
+    "targetAreas": [
+      "legs",
+      "knees-hips"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "strength",
+    "steps": [
+      "Sit tall at the edge of your chair with feet flat on the floor.",
+      "Extend your right leg out straight, parallel to the floor, and hold for 3 seconds.",
+      "Lower it slowly back down.",
+      "Repeat 10 times on each leg."
+    ],
+    "tips": []
+  },
+  {
+    "id": "legs-calf-stretch-01",
+    "name": "Standing Calf Stretch",
+    "description": "Releases calf tightness common from sitting with feet flat for hours.",
+    "targetAreas": [
+      "legs"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "stretch",
+    "steps": [
+      "Stand facing your desk or wall, using it for balance.",
+      "Step your right foot back about 60 cm and press the heel firmly into the floor.",
+      "Lean your body gently forward, bending the front knee, until you feel a stretch in the right calf.",
+      "Hold 20 seconds each side."
+    ],
+    "tips": []
+  },
+  {
+    "id": "legs-glute-squeeze-01",
+    "name": "Seated Glute Activation",
+    "description": "Counters glute inhibition from prolonged sitting.",
+    "targetAreas": [
+      "legs",
+      "knees-hips"
+    ],
+    "duration": 30,
+    "difficulty": "gentle",
+    "type": "strength",
+    "steps": [
+      "Sit upright with feet flat on the floor.",
+      "Squeeze both glutes firmly, as if trying to hold a coin between them.",
+      "Hold for 5 seconds, then release completely.",
+      "Repeat 10 times."
+    ],
+    "tips": []
+  },
+  {
+    "id": "cognitive-box-breathing-01",
+    "name": "Box Breathing",
+    "description": "A proven technique for rapidly lowering cortisol and resetting focus.",
+    "targetAreas": [
+      "general"
+    ],
+    "duration": 60,
+    "difficulty": "gentle",
+    "type": "cognitive",
+    "steps": [
+      "Exhale fully, then inhale slowly through your nose for a count of 4.",
+      "Hold your breath at the top for a count of 4.",
+      "Exhale slowly through your mouth for a count of 4.",
+      "Hold empty at the bottom for a count of 4. Repeat the cycle 4–6 times."
+    ],
+    "tips": [
+      "Used by athletes and military personnel to manage acute stress."
+    ]
+  },
+  {
+    "id": "cognitive-body-scan-01",
+    "name": "Quick Body Scan",
+    "description": "Brings you out of screen tunnel-vision and back into your body.",
+    "targetAreas": [
+      "general"
+    ],
+    "duration": 60,
+    "difficulty": "gentle",
+    "type": "cognitive",
+    "steps": [
+      "Close your eyes or soften your gaze downward.",
+      "Starting from the top of your head, slowly bring attention to each part of your body.",
+      "Notice any tension or discomfort — just observe, don't try to fix it.",
+      "Move attention from head, to neck, shoulders, arms, chest, belly, hips, legs, and feet."
+    ],
+    "tips": []
+  },
+  {
+    "id": "cognitive-grounding-01",
+    "name": "5-4-3-2-1 Grounding",
+    "description": "Engages all senses to rapidly reduce stress and restore presence.",
+    "targetAreas": [
+      "general"
+    ],
+    "duration": 60,
+    "difficulty": "gentle",
+    "type": "cognitive",
+    "steps": [
+      "Name 5 things you can see right now.",
+      "Notice 4 things you can physically feel — the chair, your clothing, air temperature.",
+      "Listen for 3 distinct sounds in your environment.",
+      "Notice 2 things you can smell (or recall a favorite scent), and 1 thing you can taste."
+    ],
+    "tips": []
+  },
+  {
+    "id": "cognitive-breath-counting-01",
+    "name": "Breath Counting",
+    "description": "A simple mindfulness practice to quiet mental chatter.",
+    "targetAreas": [
+      "general"
+    ],
+    "duration": 45,
+    "difficulty": "gentle",
+    "type": "cognitive",
+    "steps": [
+      "Sit comfortably and close your eyes.",
+      "Take a natural breath in, and as you exhale, silently count '1'.",
+      "Continue naturally — count '2' on the next exhale, up to '10'.",
+      "If your mind wanders or you lose count, gently start again from '1' without judgment."
+    ],
+    "tips": []
+  }
+]
