@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import type { Exercise } from '@/types';
 import { TimerRing } from '@/components/timer/TimerRing';
 import { ExerciseCard } from './ExerciseCard';
+import { ExerciseVisual } from './ExerciseVisual';
 import { Button } from '@/components/ui/Button';
 import { formatTime } from '@/lib/timer';
 
@@ -111,6 +112,8 @@ export function RoutinePlayer({ routine, onComplete, onSkip }: RoutinePlayerProp
           {exercise.description}
         </p>
       </div>
+
+      <ExerciseVisual exercise={exercise} />
 
       <ExerciseCard exercise={exercise} />
 

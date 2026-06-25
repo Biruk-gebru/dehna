@@ -145,11 +145,18 @@ export default function WorkPage() {
         style={{
           position: 'fixed',
           bottom: 'var(--space-5)',
-          right: 'var(--space-5)',
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex',
           gap: 'var(--space-3)',
         }}
       >
+        <Link href="/" className="btn btn-ghost btn-sm">
+          Home
+        </Link>
+        <Link href="/exercises" className="btn btn-ghost btn-sm">
+          Exercises
+        </Link>
         <Link href="/history" className="btn btn-ghost btn-sm">
           History
         </Link>
