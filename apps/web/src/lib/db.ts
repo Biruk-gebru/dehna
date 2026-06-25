@@ -1,10 +1,9 @@
 import Dexie, { type Table } from 'dexie';
-import type { UserPreferences, WorkSession, Exercise } from '@/types';
+import type { UserPreferences, WorkSession } from '@/types';
 
 class DehnaDatabase extends Dexie {
   preferences!: Table<UserPreferences>;
   sessions!: Table<WorkSession>;
-  exercises!: Table<Exercise>;
 
   constructor() {
     super('dehna');
@@ -12,6 +11,12 @@ class DehnaDatabase extends Dexie {
       preferences: 'id',
       sessions: '++id, startedAt, status',
       exercises: 'id, *targetAreas, difficulty, type',
+    });
+    // v2: drop the unused exercises table (exercises come from the bundled JSON)
+    this.version(2).stores({
+      preferences: 'id',
+      sessions: '++id, startedAt, status',
+      exercises: null,
     });
   }
 }

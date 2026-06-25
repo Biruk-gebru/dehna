@@ -16,9 +16,15 @@ export function selectRoutine(
   hoursWorked: number,
 ): Exercise[] {
   const recent = new Set(recentIds);
-  const available = catalog.filter(
+  let available = catalog.filter(
     (e) => !recent.has(e.id) && (e.difficulty === 'gentle' || e.difficulty === prefs.exerciseDifficulty),
   );
+  // If everything is filtered out, reset recency and try again
+  if (available.length === 0) {
+    available = catalog.filter((e) => e.difficulty === 'gentle' || e.difficulty === prefs.exerciseDifficulty);
+  }
+  // Last resort: use the full catalog
+  if (available.length === 0) available = [...catalog];
 
   // Mandatory: one cognitive exercise
   const cognitivePool = available.filter((e) => e.type === 'cognitive');

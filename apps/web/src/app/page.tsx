@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { usePreferences } from '@/hooks/usePreferences';
 
 const PREVIEW_EXERCISES = [
   { name: 'Seated Cat-Cow',     area: 'Back',  duration: 45, dot: '#8b6a42' },
@@ -9,6 +12,19 @@ const PREVIEW_EXERCISES = [
 ];
 
 export default function Home() {
+  const { prefs, loading } = usePreferences();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && prefs?.onboardingCompleted) {
+      router.replace('/work');
+    }
+  }, [loading, prefs, router]);
+
+  if (loading || prefs?.onboardingCompleted) {
+    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} aria-hidden="true" />;
+  }
+
   return (
     <main
       style={{

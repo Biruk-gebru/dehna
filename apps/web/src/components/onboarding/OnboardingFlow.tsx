@@ -9,25 +9,28 @@ import { Button } from '@/components/ui/Button';
 export interface OnboardingData {
   problemAreas: ProblemArea[];
   workIntervalMinutes: number;
+  exerciseDifficulty: 'gentle' | 'moderate';
 }
 
 interface OnboardingFlowProps {
   onComplete: (data: OnboardingData) => Promise<void>;
 }
 
-type Step = 'welcome' | 'areas' | 'interval';
+type Step = 'welcome' | 'areas' | 'interval' | 'difficulty';
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState<Step>('welcome');
-  const [areas, setAreas] = useState<ProblemArea[]>(['general']);
-  const [interval, setInterval] = useState(25);
-  const [saving, setSaving] = useState(false);
+  const [areas, setAreas]         = useState<ProblemArea[]>(['general']);
+  const [interval, setInterval]   = useState(25);
+  const [difficulty, setDifficulty] = useState<'gentle' | 'moderate'>('gentle');
+  const [saving, setSaving]       = useState(false);
 
   const save = async () => {
     setSaving(true);
     await onComplete({
       problemAreas: areas.length > 0 ? areas : ['general'],
       workIntervalMinutes: interval,
+      exerciseDifficulty: difficulty,
     });
   };
 
@@ -76,7 +79,26 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         </div>
         <ProblemAreaPicker selected={areas} onChange={setAreas} />
         <Button onClick={() => setStep('interval')} disabled={areas.length === 0} style={{ minWidth: 160 }}>
-          Continue
+          Continue →
+        </Button>
+      </main>
+    );
+  }
+
+  if (step === 'interval') {
+    return (
+      <main style={sharedLayout}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)' }}>
+            How long do you want to focus?
+          </h2>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
+            You can change this anytime in settings.
+          </p>
+        </div>
+        <IntervalSelector value={interval} onChange={setInterval} />
+        <Button onClick={() => setStep('difficulty')} style={{ minWidth: 180 }}>
+          Continue →
         </Button>
       </main>
     );
@@ -86,13 +108,30 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     <main style={sharedLayout}>
       <div style={{ textAlign: 'center' }}>
         <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)' }}>
-          How long do you want to focus?
+          How should the exercises feel?
         </h2>
         <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
-          You can change this anytime in settings.
+          Gentle is safe for most people. Moderate adds a bit more effort.
         </p>
       </div>
-      <IntervalSelector value={interval} onChange={setInterval} />
+      <div style={{ display: 'flex', gap: 'var(--space-4)', width: '100%', maxWidth: 340 }}>
+        {(['gentle', 'moderate'] as const).map((d) => (
+          <button
+            key={d}
+            type="button"
+            className={`area-card${difficulty === d ? ' selected' : ''}`}
+            onClick={() => setDifficulty(d)}
+            style={{ flex: 1 }}
+          >
+            <span style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-medium)' }}>
+              {d.charAt(0).toUpperCase() + d.slice(1)}
+            </span>
+            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
+              {d === 'gentle' ? 'Low-impact, chair-friendly' : 'Slightly more demanding'}
+            </p>
+          </button>
+        ))}
+      </div>
       <Button onClick={save} disabled={saving} style={{ minWidth: 180 }}>
         {saving ? 'Saving…' : 'Start working'}
       </Button>

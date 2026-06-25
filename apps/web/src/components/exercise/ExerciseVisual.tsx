@@ -6,114 +6,6 @@ interface Props {
   exercise: Exercise;
 }
 
-// ─── Injected keyframes + animation classes ──────────────────────────────────
-
-const CSS = `
-  @keyframes ev-iris-far {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    40%, 60% { transform: translate(2px, 4px) scale(0.8); }
-  }
-  @keyframes ev-iris-circle {
-    0%   { transform: translate(0, -15px); }
-    25%  { transform: translate(15px, 0); }
-    50%  { transform: translate(0, 15px); }
-    75%  { transform: translate(-15px, 0); }
-    100% { transform: translate(0, -15px); }
-  }
-  @keyframes ev-iris-focus {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(0.62); }
-  }
-  @keyframes ev-lid-blink {
-    0%, 20%, 80%, 100% { transform: scaleY(0); }
-    40%, 60%           { transform: scaleY(1); }
-  }
-  @keyframes ev-cat-cow {
-    0%, 100% { transform: rotate(-10deg); }
-    50%      { transform: rotate(10deg); }
-  }
-  @keyframes ev-side-bend {
-    0%, 100% { transform: rotate(-14deg); }
-    50%      { transform: rotate(14deg); }
-  }
-  @keyframes ev-torso-twist {
-    0%, 100% { transform: rotate(-16deg); }
-    50%      { transform: rotate(16deg); }
-  }
-  @keyframes ev-back-ext {
-    0%, 100% { transform: rotate(0deg); }
-    50%      { transform: rotate(-18deg); }
-  }
-  @keyframes ev-head-tilt {
-    0%, 100% { transform: rotate(-18deg); }
-    50%      { transform: rotate(18deg); }
-  }
-  @keyframes ev-head-rotate {
-    0%, 100% { transform: rotate(-22deg); }
-    50%      { transform: rotate(22deg); }
-  }
-  @keyframes ev-arm-roll-l {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  @keyframes ev-arm-roll-r {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(-360deg); }
-  }
-  @keyframes ev-arm-lift {
-    0%, 100% { transform: rotate(0deg); }
-    50%      { transform: rotate(-82deg); }
-  }
-  @keyframes ev-arm-cross {
-    0%, 100% { transform: rotate(0deg) translateX(0); }
-    50%      { transform: rotate(-30deg) translateX(14px); }
-  }
-  @keyframes ev-wrist-l {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  @keyframes ev-wrist-r {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(-360deg); }
-  }
-  @keyframes ev-breath {
-    0%, 100% { transform: scaleX(1) scaleY(1); }
-    50%      { transform: scaleX(1.06) scaleY(1.04); }
-  }
-  @keyframes ev-squat {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(20px); }
-  }
-  @keyframes ev-calf {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-10px); }
-  }
-
-  .ev-head-tilt   { animation: ev-head-tilt   2.5s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
-  .ev-head-rotate { animation: ev-head-rotate  2.5s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
-
-  .ev-torso-cat-cow   { animation: ev-cat-cow    3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-torso-side-bend { animation: ev-side-bend  3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-torso-twist     { animation: ev-torso-twist 3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-torso-back-ext  { animation: ev-back-ext   3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-torso-breath    { animation: ev-breath     4s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-
-  .ev-arm-l-roll  { animation: ev-arm-roll-l 2.5s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-arm-r-roll  { animation: ev-arm-roll-r 2.5s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-arm-l-lift  { animation: ev-arm-lift   3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-arm-r-lift  { animation: ev-arm-lift   3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-arm-r-cross { animation: ev-arm-cross  3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-  .ev-wrist-l     { animation: ev-wrist-l    2s linear infinite;       transform-origin: 50% 100%; transform-box: fill-box; }
-  .ev-wrist-r     { animation: ev-wrist-r    2s linear infinite;       transform-origin: 50% 100%; transform-box: fill-box; }
-
-  .ev-whole-squat { animation: ev-squat 2s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
-  .ev-whole-calf  { animation: ev-calf  2s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
-
-  .ev-iris-far    { animation: ev-iris-far    3s ease-in-out infinite; transform-origin: 50% 50%; transform-box: fill-box; }
-  .ev-iris-circle { animation: ev-iris-circle 4s linear infinite;       transform-origin: 50% 50%; transform-box: fill-box; }
-  .ev-iris-focus  { animation: ev-iris-focus  3s ease-in-out infinite; transform-origin: 50% 50%; transform-box: fill-box; }
-  .ev-lid-blink   { animation: ev-lid-blink   3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-`;
 
 // ─── Animation class selector ────────────────────────────────────────────────
 
@@ -345,7 +237,6 @@ export function ExerciseVisual({ exercise }: Props) {
         padding: 'var(--space-2) 0',
       }}
     >
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       {exercise.type === 'eye-break' ? (
         <EyeVisual id={exercise.id} />
       ) : (

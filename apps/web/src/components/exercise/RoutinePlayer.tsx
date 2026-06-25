@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import type { Exercise } from '@/types';
 import { TimerRing } from '@/components/timer/TimerRing';
 import { ExerciseCard } from './ExerciseCard';
@@ -66,6 +67,16 @@ export function RoutinePlayer({ routine, onComplete, onSkip }: RoutinePlayerProp
         gap: 'var(--space-5)',
       }}
     >
+      {/* Minimal escape nav */}
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px' }}>
+        <Link href="/" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textDecoration: 'none', fontWeight: 'var(--font-weight-medium)' }}>
+          ደህና
+        </Link>
+        <Link href="/work" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+          ← Back to timer
+        </Link>
+      </nav>
+
       {/* Progress indicator */}
       <p
         style={{

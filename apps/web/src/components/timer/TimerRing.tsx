@@ -40,7 +40,7 @@ export function TimerRing({ progress, size = 240, strokeWidth = 10, children }: 
           strokeDashoffset={offset}
           strokeLinecap="round"
           transform={`rotate(-90 ${half} ${half})`}
-          style={{ transition: 'stroke-dashoffset 0.8s linear' }}
+          style={{ transition: 'stroke-dashoffset 0.45s linear' }}
         />
       </svg>
       {children && (

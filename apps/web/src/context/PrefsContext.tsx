@@ -20,35 +20,42 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
 
     // Bail after 3 s if IDB hangs (can happen on Safari first access).
     const timeout = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        setLoading(false);
-      }
+      if (!settled) { settled = true; setLoading(false); }
     }, 3000);
 
     import('@/lib/db')
-      .then(({ db, DEFAULT_PREFERENCES }) => {
-        return db.preferences.get(1).then((existing) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeout);
-          const now = new Date().toISOString();
-          setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
-          setLoading(false);
-        });
+      .then(async ({ db, DEFAULT_PREFERENCES }) => {
+        if (settled) return;
+
+        // Mark any stale active sessions (older than 12 h) as abandoned
+        const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+        const stale = await db.sessions
+          .where('status').equals('active')
+          .filter((s) => s.startedAt < cutoff)
+          .toArray();
+        await Promise.all(
+          stale.map((s) =>
+            db.sessions.update(s.id as number, {
+              status: 'abandoned',
+              endedAt: new Date().toISOString(),
+              durationMinutes: Math.floor((Date.now() - new Date(s.startedAt).getTime()) / 60000),
+            }),
+          ),
+        );
+
+        const existing = await db.preferences.get(1);
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        const now = new Date().toISOString();
+        setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
+        setLoading(false);
       })
       .catch(() => {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timeout);
-          setLoading(false);
-        }
+        if (!settled) { settled = true; clearTimeout(timeout); setLoading(false); }
       });
 
-    return () => {
-      settled = true;
-      clearTimeout(timeout);
-    };
+    return () => { settled = true; clearTimeout(timeout); };
   }, []);
 
   const updatePrefs = useCallback(

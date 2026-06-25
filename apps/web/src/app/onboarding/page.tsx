@@ -1,37 +1,16 @@
 'use client';
 
-import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
-import type { ProblemArea } from '@/types';
+import { usePreferences } from '@/hooks/usePreferences';
+import type { OnboardingData } from '@/components/onboarding/OnboardingFlow';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const done = useRef(false);
+  const { updatePrefs } = usePreferences();
 
-  const handleComplete = async ({
-    problemAreas,
-    workIntervalMinutes,
-  }: {
-    problemAreas: ProblemArea[];
-    workIntervalMinutes: number;
-  }) => {
-    done.current = true;
-    try {
-      const { db, DEFAULT_PREFERENCES } = await import('@/lib/db');
-      const now = new Date().toISOString();
-      await db.preferences.put({
-        ...DEFAULT_PREFERENCES,
-        id: 1,
-        problemAreas,
-        workIntervalMinutes,
-        onboardingCompleted: true,
-        createdAt: now,
-        updatedAt: now,
-      });
-    } catch {
-      // IDB unavailable — navigate anyway
-    }
+  const handleComplete = async ({ problemAreas, workIntervalMinutes, exerciseDifficulty }: OnboardingData) => {
+    await updatePrefs({ problemAreas, workIntervalMinutes, exerciseDifficulty, onboardingCompleted: true });
     router.replace('/work');
   };
 

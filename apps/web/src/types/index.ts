@@ -48,7 +48,6 @@ export interface Exercise {
   duration: 30 | 45 | 60 | 90;
   difficulty: 'gentle' | 'moderate';
   type: 'stretch' | 'mobility' | 'strength' | 'cognitive' | 'eye-break';
-  illustration: string;
   steps: string[];
   tips: string[];
 }

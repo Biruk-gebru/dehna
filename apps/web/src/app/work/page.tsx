@@ -71,7 +71,7 @@ export default function WorkPage() {
     setRoutine(newRoutine);
     setMode('break');
     if (prefs?.soundEnabled) playChime();
-    notify('Time for a break!', { body: 'A short movement break is ready.' });
+    if (prefs?.notificationsEnabled) notify('Time for a break!', { body: 'A short movement break is ready.' });
   }, [generateRoutine, prefs?.soundEnabled]);
 
   const timer = useTimer(
