@@ -1,45 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/db';
+import { usePreferences } from '@/hooks/usePreferences';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
 export default function Home() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const { prefs, loading, updatePrefs } = usePreferences();
 
   useEffect(() => {
-    db.preferences
-      .get(1)
-      .then((prefs) => {
-        if (prefs?.onboardingCompleted) {
-          router.replace('/work');
-        } else {
-          setNeedsOnboarding(true);
-          setReady(true);
-        }
-      })
-      .catch(() => {
-        setNeedsOnboarding(true);
-        setReady(true);
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!loading && prefs?.onboardingCompleted) {
+      router.replace('/work');
+    }
+  }, [loading, prefs?.onboardingCompleted, router]);
 
-  if (!ready) {
-    return (
-      <div
-        style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }}
-        aria-hidden="true"
-      />
-    );
+  if (loading) {
+    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} />;
   }
 
-  if (needsOnboarding) {
-    return <OnboardingFlow onComplete={() => router.replace('/work')} />;
+  if (prefs?.onboardingCompleted) {
+    // Already navigating to /work
+    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} />;
   }
 
-  return null;
+  return (
+    <OnboardingFlow
+      onComplete={async ({ problemAreas, workIntervalMinutes }) => {
+        await updatePrefs({ problemAreas, workIntervalMinutes, onboardingCompleted: true });
+        router.replace('/work');
+      }}
+    />
+  );
 }
