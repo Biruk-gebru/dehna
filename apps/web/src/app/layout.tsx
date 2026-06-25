@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google';
 import '../styles/globals.css';
+import { PrefsProvider } from '@/context/PrefsContext';
 import { ThemeSync } from '@/components/layout/ThemeSync';
 import { ServiceWorkerReg } from '@/components/layout/ServiceWorkerReg';
 import { InstallPrompt } from '@/components/layout/InstallPrompt';
@@ -44,10 +45,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="min-h-full flex flex-col">
-        <ThemeSync />
-        <ServiceWorkerReg />
-        <InstallPrompt />
-        {children}
+        <PrefsProvider>
+          <ThemeSync />
+          <ServiceWorkerReg />
+          <InstallPrompt />
+          {children}
+        </PrefsProvider>
       </body>
     </html>
   );

@@ -4,10 +4,9 @@ import { useEffect } from 'react';
 
 export function ServiceWorkerReg() {
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        // silently fail — SW is a progressive enhancement
-      });
+    // Only register in production — the SW caches aggressively and breaks HMR in dev
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
   }, []);
 
