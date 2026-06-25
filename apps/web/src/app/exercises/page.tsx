@@ -260,11 +260,11 @@ export default function ExercisesPage() {
       <nav
         style={{
           display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 'var(--space-3)',
-          padding: 'var(--space-4) var(--space-5)',
+          padding: '18px 24px',
           borderBottom: '1px solid var(--color-border)',
-          backgroundColor: 'var(--color-bg, #edebe6)',
+          backgroundColor: 'var(--color-bg)',
           position: 'sticky',
           top: 0,
           zIndex: 10,
@@ -272,30 +272,23 @@ export default function ExercisesPage() {
       >
         <Link
           href="/"
-          style={{
-            fontSize: 'var(--font-size-sm)',
-            color: 'var(--color-text-muted)',
-            textDecoration: 'none',
-          }}
+          style={{ fontWeight: 'var(--font-weight-medium)', fontSize: 'var(--font-size-base)', color: 'var(--color-text)', textDecoration: 'none', letterSpacing: '-0.01em' }}
+        >
+          ደህና
+        </Link>
+        <Link
+          href="/"
+          style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textDecoration: 'none' }}
         >
           ← Home
         </Link>
-        <span
-          style={{
-            flex: 1,
-            fontWeight: 'var(--font-weight-bold)',
-            fontSize: 'var(--font-size-base)',
-            color: 'var(--color-text)',
-            textAlign: 'center',
-          }}
-        >
-          Exercises
-        </span>
-        {/* spacer to keep title centered */}
-        <span style={{ width: 56 }} />
       </nav>
 
       <div style={{ padding: 'var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: 600, margin: '0 auto', width: '100%' }}>
+
+        <h1 style={{ fontSize: 'clamp(1.6rem, 5vw, 2rem)', fontWeight: 'var(--font-weight-light)', color: 'var(--color-text)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+          Exercises
+        </h1>
 
         {/* Search */}
         <input

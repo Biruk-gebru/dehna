@@ -1,13 +1,13 @@
 [data-theme="earth-terracotta"] {
-  --color-bg: #edebe6;
-  --color-surface: #f5f3ef;
-  --color-surface-hover: #e8e5de;
-  --color-text: #403b33;
-  --color-text-muted: #7a746a;
+  --color-bg: #f5f3ef;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0ede8;
+  --color-text: #1c1510;
+  --color-text-muted: #6b6358;
   --color-primary: #d3643b;
   --color-primary-hover: #b8522d;
   --color-accent: #94c7b6;
-  --color-border: #ddd9d2;
+  --color-border: #e8e4de;
   --color-success: #94c7b6;
   --color-warning: #d6e1c7;
   --color-error: #d3643b;

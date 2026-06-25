@@ -96,21 +96,22 @@ export default function HistoryPage() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--color-bg)',
-        padding: 'var(--space-7) var(--space-6)',
-        maxWidth: 560,
-        margin: '0 auto',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-7)' }}>
-        <h1 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)' }}>
-          History
-        </h1>
-        <Link href="/work" className="btn btn-ghost btn-sm">← Back</Link>
-      </div>
+    <main style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Nav */}
+      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid var(--color-border)' }}>
+        <Link href="/" style={{ fontWeight: 'var(--font-weight-medium)', fontSize: 'var(--font-size-base)', color: 'var(--color-text)', textDecoration: 'none', letterSpacing: '-0.01em' }}>
+          ደህና
+        </Link>
+        <Link href="/work" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+          ← Work
+        </Link>
+      </nav>
+
+      <div style={{ maxWidth: 520, width: '100%', margin: '0 auto', padding: 'var(--space-7) var(--space-6)' }}>
+      <h1 style={{ fontSize: 'clamp(1.6rem, 5vw, 2rem)', fontWeight: 'var(--font-weight-light)', color: 'var(--color-text)', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 'var(--space-7)' }}>
+        History
+      </h1>
 
       {/* Stats row */}
       <div
@@ -210,6 +211,7 @@ export default function HistoryPage() {
           </div>
         </section>
       ))}
+      </div>
     </main>
   );
 }

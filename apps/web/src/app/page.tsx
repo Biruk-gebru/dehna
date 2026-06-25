@@ -3,11 +3,9 @@
 import Link from 'next/link';
 
 const PREVIEW_EXERCISES = [
-  { name: 'Seated Cat-Cow',       area: 'Back',  duration: 45, dot: '#8b6a42' },
-  { name: '20-20-20 Eye Break',   area: 'Eyes',  duration: 30, dot: '#5a9e8f' },
-  { name: 'Neck Side Tilt',       area: 'Neck',  duration: 30, dot: '#6b7c9a' },
-  { name: 'Wrist Circles',        area: 'Wrists', duration: 30, dot: '#9a6b7a' },
-  { name: 'Shoulder Rolls',       area: 'Shoulders', duration: 30, dot: '#7a8a5a' },
+  { name: 'Seated Cat-Cow',     area: 'Back',  duration: 45, dot: '#8b6a42' },
+  { name: '20-20-20 Eye Break', area: 'Eyes',  duration: 30, dot: '#5a9e8f' },
+  { name: 'Neck Side Tilt',     area: 'Neck',  duration: 30, dot: '#6b7c9a' },
 ];
 
 export default function Home() {
@@ -142,93 +140,58 @@ export default function Home() {
             Get started
           </Link>
 
-          {/* Product preview */}
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 480,
-              marginTop: 8,
-            }}
-          >
-            {/* App chrome */}
+          {/* Product preview — secondary, compact */}
+          <div style={{ width: '100%', maxWidth: 340, marginTop: 4 }}>
             <div
               style={{
-                backgroundColor: 'rgba(255,255,255,0.88)',
-                borderRadius: '20px 20px 0 0',
+                backgroundColor: 'rgba(255,255,255,0.82)',
+                borderRadius: '14px',
                 overflow: 'hidden',
-                boxShadow: '0 8px 48px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
-                backdropFilter: 'blur(12px)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04)',
+                backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255,255,255,0.9)',
-                borderBottom: 'none',
               }}
             >
-              {/* Header bar */}
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '16px 20px',
+                  padding: '11px 16px',
                   borderBottom: '1px solid #f0ede8',
                 }}
               >
-                <span style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.9rem', color: '#1c1510' }}>
-                  Exercises
+                <span style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.8rem', color: '#1c1510' }}>
+                  A few of the exercises
                 </span>
-                <span style={{ fontSize: '0.75rem', color: '#b0a898', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontSize: '0.7rem', color: '#b0a898', fontFamily: 'var(--font-mono)' }}>
                   40 total
                 </span>
               </div>
 
-              {/* Exercise rows */}
               {PREVIEW_EXERCISES.map(({ name, area, duration, dot }, i) => (
                 <div
                   key={name}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 14,
-                    padding: '13px 20px',
+                    gap: 10,
+                    padding: '10px 16px',
                     borderBottom: i < PREVIEW_EXERCISES.length - 1 ? '1px solid #f5f3ef' : 'none',
                   }}
                 >
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: dot,
-                      flexShrink: 0,
-                    }}
-                  />
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dot, flexShrink: 0 }} />
                   <div style={{ flex: 1, textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 'var(--font-weight-medium)', color: '#1c1510' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 'var(--font-weight-medium)', color: '#1c1510' }}>
                       {name}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#9a9088', marginTop: 2 }}>
-                      {area}
-                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#9a9088', marginTop: 1 }}>{area}</div>
                   </div>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.75rem',
-                      color: '#c0b8b0',
-                    }}
-                  >
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#c0b8b0' }}>
                     {duration}s
                   </span>
                 </div>
               ))}
-
-              {/* Fade-out bottom */}
-              <div
-                style={{
-                  height: 56,
-                  background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))',
-                  marginTop: -4,
-                }}
-              />
             </div>
           </div>
         </div>
