@@ -80,7 +80,7 @@ export default function Home() {
                 backgroundColor: 'rgba(255,255,255,0.5)',
               }}
             >
-              Start for free
+              Get started
             </Link>
           </div>
         </nav>
@@ -96,36 +96,16 @@ export default function Home() {
             gap: 28,
           }}
         >
-          {/* Announcement pill */}
-          <Link
-            href="/exercises"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 16px',
-              backgroundColor: 'rgba(255,255,255,0.62)',
-              border: '1px solid rgba(0,0,0,0.1)',
-              borderRadius: '999px',
-              fontSize: '0.8125rem',
-              color: '#5a5248',
-              textDecoration: 'none',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            40 guided exercises · Browse them all →
-          </Link>
-
           {/* Heading */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 600 }}>
             <h1
               style={{
-                fontSize: 'clamp(2.8rem, 10vw, 5rem)',
-                fontWeight: 'var(--font-weight-bold)',
+                fontSize: 'clamp(2rem, 6.5vw, 3.2rem)',
+                fontWeight: 'var(--font-weight-light)',
                 color: '#1c1510',
-                lineHeight: 1.02,
+                lineHeight: 1.12,
                 margin: 0,
-                letterSpacing: '-0.035em',
+                letterSpacing: '-0.02em',
               }}
             >
               Your body needs
@@ -133,14 +113,14 @@ export default function Home() {
             </h1>
             <p
               style={{
-                fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
+                fontSize: 'clamp(0.95rem, 2vw, 1.1rem)',
                 color: '#6b6358',
-                lineHeight: 1.65,
+                lineHeight: 1.7,
                 margin: '0 auto',
-                maxWidth: 460,
+                maxWidth: 420,
               }}
             >
-              Guided micro-breaks for eyes, back, neck, and wrists —
+              Guided micro-breaks for eyes, back, neck, and wrists,
               tailored to where you ache.
             </p>
           </div>
@@ -150,7 +130,7 @@ export default function Home() {
             href="/onboarding"
             style={{
               display: 'inline-block',
-              padding: '16px 44px',
+              padding: '15px 42px',
               backgroundColor: '#d3643b',
               color: '#fff',
               fontSize: 'var(--font-size-base)',
@@ -159,7 +139,7 @@ export default function Home() {
               textDecoration: 'none',
             }}
           >
-            Start for free
+            Get started
           </Link>
 
           {/* Product preview */}

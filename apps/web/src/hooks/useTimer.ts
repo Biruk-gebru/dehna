@@ -5,6 +5,11 @@ import { formatTime } from '@/lib/timer';
 
 export type TimerState = 'idle' | 'running' | 'paused';
 
+export interface TimerRestore {
+  elapsedSeconds: number;
+  state: 'running' | 'paused';
+}
+
 export interface TimerHandle {
   state: TimerState;
   elapsedSeconds: number;
@@ -17,25 +22,26 @@ export interface TimerHandle {
   stop: () => void;
 }
 
-export function useTimer(intervalMinutes: number, onComplete: () => void): TimerHandle {
+export function useTimer(
+  intervalMinutes: number,
+  onComplete: () => void,
+  restore?: TimerRestore,
+): TimerHandle {
   const totalSeconds = intervalMinutes * 60;
 
-  const [state, setState] = useState<TimerState>('idle');
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [state, setState] = useState<TimerState>(restore?.state ?? 'idle');
+  const [elapsedSeconds, setElapsedSeconds] = useState(restore?.elapsedSeconds ?? 0);
 
-  const startTimeRef = useRef<number | null>(null);
-  const accumulatedRef = useRef<number>(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onCompleteRef = useRef(onComplete);
+  // Seed accumulated from restore so pause/resume math stays consistent
+  const startTimeRef  = useRef<number | null>(null);
+  const accumulatedRef = useRef<number>(restore?.elapsedSeconds ?? 0);
+  const intervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onCompleteRef  = useRef(onComplete);
   const totalSecondsRef = useRef(totalSeconds);
+  const didRestoreRef  = useRef(false);
 
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
-
-  useEffect(() => {
-    totalSecondsRef.current = totalSeconds;
-  }, [totalSeconds]);
+  useEffect(() => { onCompleteRef.current  = onComplete; }, [onComplete]);
+  useEffect(() => { totalSecondsRef.current = totalSeconds; }, [totalSeconds]);
 
   const clearTick = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -50,7 +56,7 @@ export function useTimer(intervalMinutes: number, onComplete: () => void): Timer
       if (startTimeRef.current === null) return;
       const runSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const total = accumulatedRef.current + runSeconds;
-      const cap = totalSecondsRef.current;
+      const cap   = totalSecondsRef.current;
 
       if (total >= cap) {
         clearTick();
@@ -63,9 +69,21 @@ export function useTimer(intervalMinutes: number, onComplete: () => void): Timer
     }, 500);
   }, [clearTick]);
 
+  // On mount, resume if restored in running state
+  useEffect(() => {
+    if (didRestoreRef.current || !restore || restore.state !== 'running') {
+      didRestoreRef.current = true;
+      return;
+    }
+    didRestoreRef.current = true;
+    startTimeRef.current = Date.now();
+    startTick();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const start = useCallback(() => {
     clearTick();
-    startTimeRef.current = Date.now();
+    startTimeRef.current   = Date.now();
     accumulatedRef.current = 0;
     setElapsedSeconds(0);
     setState('running');
@@ -89,15 +107,13 @@ export function useTimer(intervalMinutes: number, onComplete: () => void): Timer
 
   const stop = useCallback(() => {
     clearTick();
-    startTimeRef.current = null;
+    startTimeRef.current   = null;
     accumulatedRef.current = 0;
     setElapsedSeconds(0);
     setState('idle');
   }, [clearTick]);
 
-  useEffect(() => {
-    return clearTick;
-  }, [clearTick]);
+  useEffect(() => clearTick, [clearTick]);
 
   const remaining = Math.max(0, totalSeconds - elapsedSeconds);
 

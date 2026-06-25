@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
-import { useTimer } from '@/hooks/useTimer';
+import { useTimer, type TimerRestore } from '@/hooks/useTimer';
 import { useExercises } from '@/hooks/useExercises';
 import { useSessionHistory } from '@/hooks/useSessionHistory';
 import { notify, playChime, requestNotificationPermission } from '@/lib/notifications';
@@ -15,27 +15,89 @@ import type { Exercise } from '@/types';
 
 type AppMode = 'idle' | 'running' | 'paused' | 'break';
 
+const SAVE_KEY = 'dehna-work';
+
+type WorkSave = {
+  savedAt: number;
+  elapsedSeconds: number;
+  timerState: 'running' | 'paused';
+  appMode: 'running' | 'paused';
+  workStartedAt: number;
+};
+
+function readSavedSession(): { restore: TimerRestore; appMode: 'running' | 'paused'; workStartedAt: number } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const s: WorkSave = JSON.parse(raw);
+    const extraSeconds = s.timerState === 'running'
+      ? Math.floor((Date.now() - s.savedAt) / 1000)
+      : 0;
+    const elapsed = s.elapsedSeconds + extraSeconds;
+    return {
+      restore: { elapsedSeconds: elapsed, state: s.timerState },
+      appMode: s.appMode,
+      workStartedAt: s.workStartedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function WorkPage() {
   const { prefs, loading } = usePreferences();
-  const [mode, setMode] = useState<AppMode>('idle');
+
+  // Restore from sessionStorage once on mount (lazy useState — runs before first render)
+  const [saved] = useState(() => readSavedSession());
+
+  const [mode, setMode]       = useState<AppMode>(saved?.appMode ?? 'idle');
   const [routine, setRoutine] = useState<Exercise[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(null);
 
-  const workStartRef = useRef<number>(0);
+  const workStartRef = useRef<number>(saved?.workStartedAt ?? 0);
 
   const { startSession, recordBreak, endSession } = useSessionHistory();
   const { generateRoutine } = useExercises(prefs);
 
   const handleWorkComplete = useCallback(() => {
-    const hoursWorked = (Date.now() - workStartRef.current) / 3600000;
+    try { sessionStorage.removeItem(SAVE_KEY); } catch {}
+    const hoursWorked = workStartRef.current
+      ? (Date.now() - workStartRef.current) / 3_600_000
+      : 0.5;
     const newRoutine = generateRoutine(hoursWorked);
     setRoutine(newRoutine);
     setMode('break');
     if (prefs?.soundEnabled) playChime();
     notify('Time for a break!', { body: 'A short movement break is ready.' });
-  }, [generateRoutine]);
+  }, [generateRoutine, prefs?.soundEnabled]);
 
-  const timer = useTimer(prefs?.workIntervalMinutes ?? 25, handleWorkComplete);
+  const timer = useTimer(
+    prefs?.workIntervalMinutes ?? 25,
+    handleWorkComplete,
+    saved?.restore,
+  );
+
+  // Persist timer state whenever it transitions (not on every tick)
+  useEffect(() => {
+    if (timer.state === 'idle' || mode === 'idle' || mode === 'break') {
+      if (mode === 'idle') {
+        try { sessionStorage.removeItem(SAVE_KEY); } catch {}
+      }
+      return;
+    }
+    try {
+      const save: WorkSave = {
+        savedAt: Date.now(),
+        elapsedSeconds: timer.elapsedSeconds,
+        timerState: timer.state as 'running' | 'paused',
+        appMode: mode as 'running' | 'paused',
+        workStartedAt: workStartRef.current,
+      };
+      sessionStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer.state, mode]);
 
   const handleStart = useCallback(async () => {
     await requestNotificationPermission();
@@ -58,6 +120,7 @@ export default function WorkPage() {
 
   const handleStop = useCallback(async () => {
     timer.stop();
+    try { sessionStorage.removeItem(SAVE_KEY); } catch {}
     if (sessionId !== null) {
       await endSession(sessionId);
       setSessionId(null);
@@ -151,18 +214,10 @@ export default function WorkPage() {
           gap: 'var(--space-3)',
         }}
       >
-        <Link href="/" className="btn btn-ghost btn-sm">
-          Home
-        </Link>
-        <Link href="/exercises" className="btn btn-ghost btn-sm">
-          Exercises
-        </Link>
-        <Link href="/history" className="btn btn-ghost btn-sm">
-          History
-        </Link>
-        <Link href="/settings" className="btn btn-ghost btn-sm">
-          Settings
-        </Link>
+        <Link href="/" className="btn btn-ghost btn-sm">Home</Link>
+        <Link href="/exercises" className="btn btn-ghost btn-sm">Exercises</Link>
+        <Link href="/history" className="btn btn-ghost btn-sm">History</Link>
+        <Link href="/settings" className="btn btn-ghost btn-sm">Settings</Link>
       </nav>
     </main>
   );
