@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
-import { useTimer, type TimerRestore } from '@/hooks/useTimer';
+import { useTimer, type TimerRestore, type TimerState } from '@/hooks/useTimer';
 import { useExercises } from '@/hooks/useExercises';
 import { useSessionHistory } from '@/hooks/useSessionHistory';
 import { notify, playChime, requestNotificationPermission } from '@/lib/notifications';
@@ -55,7 +55,9 @@ export default function WorkPage() {
   const [routine, setRoutine] = useState<Exercise[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(null);
 
-  const workStartRef = useRef<number>(saved?.workStartedAt ?? 0);
+  const workStartRef  = useRef<number>(saved?.workStartedAt ?? 0);
+  // Always-current snapshot used by the unmount cleanup to avoid stale closures
+  const liveRef = useRef<{ timerState: TimerState; elapsed: number; appMode: AppMode } | null>(null);
 
   const { startSession, recordBreak, endSession } = useSessionHistory();
   const { generateRoutine } = useExercises(prefs);
@@ -78,7 +80,10 @@ export default function WorkPage() {
     saved?.restore,
   );
 
-  // Persist timer state whenever it transitions (not on every tick)
+  // Keep liveRef current every render so the unmount cleanup has fresh values
+  liveRef.current = { timerState: timer.state, elapsed: timer.elapsedSeconds, appMode: mode };
+
+  // Persist on state transitions
   useEffect(() => {
     if (timer.state === 'idle' || mode === 'idle' || mode === 'break') {
       if (mode === 'idle') {
@@ -98,6 +103,24 @@ export default function WorkPage() {
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timer.state, mode]);
+
+  // Also persist on unmount (navigation away) so elapsed time is always up-to-date
+  useEffect(() => {
+    return () => {
+      const live = liveRef.current;
+      if (!live || live.timerState === 'idle' || live.appMode === 'idle' || live.appMode === 'break') return;
+      try {
+        const save: WorkSave = {
+          savedAt: Date.now(),
+          elapsedSeconds: live.elapsed,
+          timerState: live.timerState as 'running' | 'paused',
+          appMode: live.appMode as 'running' | 'paused',
+          workStartedAt: workStartRef.current,
+        };
+        sessionStorage.setItem(SAVE_KEY, JSON.stringify(save));
+      } catch {}
+    };
+  }, []);
 
   const handleStart = useCallback(async () => {
     await requestNotificationPermission();

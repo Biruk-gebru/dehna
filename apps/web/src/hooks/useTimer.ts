@@ -38,7 +38,6 @@ export function useTimer(
   const intervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const onCompleteRef  = useRef(onComplete);
   const totalSecondsRef = useRef(totalSeconds);
-  const didRestoreRef  = useRef(false);
 
   useEffect(() => { onCompleteRef.current  = onComplete; }, [onComplete]);
   useEffect(() => { totalSecondsRef.current = totalSeconds; }, [totalSeconds]);
@@ -69,15 +68,16 @@ export function useTimer(
     }, 500);
   }, [clearTick]);
 
-  // On mount, resume if restored in running state
+  // On mount, resume if restored in running state.
+  // Returns a cleanup so React StrictMode's double-invoke tears down cleanly.
   useEffect(() => {
-    if (didRestoreRef.current || !restore || restore.state !== 'running') {
-      didRestoreRef.current = true;
-      return;
-    }
-    didRestoreRef.current = true;
+    if (!restore || restore.state !== 'running') return;
     startTimeRef.current = Date.now();
     startTick();
+    return () => {
+      clearTick();
+      startTimeRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
