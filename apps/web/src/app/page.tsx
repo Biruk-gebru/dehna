@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
 
@@ -12,18 +10,8 @@ const PREVIEW_EXERCISES = [
 ];
 
 export default function Home() {
-  const { prefs, loading } = usePreferences();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && prefs?.onboardingCompleted) {
-      router.replace('/work');
-    }
-  }, [loading, prefs, router]);
-
-  if (loading || prefs?.onboardingCompleted) {
-    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} aria-hidden="true" />;
-  }
+  const { prefs } = usePreferences();
+  const returning = prefs?.onboardingCompleted ?? false;
 
   return (
     <main
@@ -82,7 +70,7 @@ export default function Home() {
               Exercises
             </Link>
             <Link
-              href="/onboarding"
+              href={returning ? '/work' : '/onboarding'}
               style={{
                 fontSize: 'var(--font-size-sm)',
                 fontWeight: 'var(--font-weight-medium)',
@@ -94,7 +82,7 @@ export default function Home() {
                 backgroundColor: 'rgba(255,255,255,0.5)',
               }}
             >
-              Get started
+              {returning ? 'Back to work' : 'Get started'}
             </Link>
           </div>
         </nav>
@@ -141,7 +129,7 @@ export default function Home() {
 
           {/* CTA — single pill, centered */}
           <Link
-            href="/onboarding"
+            href={returning ? '/work' : '/onboarding'}
             style={{
               display: 'inline-block',
               padding: '15px 42px',
@@ -153,7 +141,7 @@ export default function Home() {
               textDecoration: 'none',
             }}
           >
-            Get started
+            {returning ? 'Back to work' : 'Get started'}
           </Link>
 
           {/* Product preview — secondary, compact */}
