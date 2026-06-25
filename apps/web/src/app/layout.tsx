@@ -38,6 +38,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="earth-terracotta"
+      suppressHydrationWarning
       className={`${bricolage.variable} ${jetbrainsMono.variable} h-full`}
     >
       <head>

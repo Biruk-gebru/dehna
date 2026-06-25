@@ -1,47 +1,44 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { usePreferences } from '@/hooks/usePreferences';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
+import { db, DEFAULT_PREFERENCES } from '@/lib/db';
 
 export default function Home() {
   const router = useRouter();
-  const { prefs, loading, updatePrefs } = usePreferences();
+  const done = useRef(false);
 
   useEffect(() => {
-    if (!loading && prefs?.onboardingCompleted) {
-      router.replace('/work');
-    }
-  }, [loading, prefs?.onboardingCompleted, router]);
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--color-bg, #edebe6)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <span style={{ fontSize: '2rem', color: 'var(--color-text-muted, #7a746a)' }}>ደህና</span>
-      </div>
-    );
-  }
-
-  if (prefs?.onboardingCompleted) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--color-bg, #edebe6)',
-      }} />
-    );
-  }
+    db.preferences
+      .get(1)
+      .then((prefs) => {
+        if (prefs?.onboardingCompleted && !done.current) {
+          done.current = true;
+          router.replace('/work');
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   return (
     <OnboardingFlow
       onComplete={async ({ problemAreas, workIntervalMinutes }) => {
-        await updatePrefs({ problemAreas, workIntervalMinutes, onboardingCompleted: true });
+        done.current = true;
+        const now = new Date().toISOString();
+        try {
+          await db.preferences.put({
+            ...DEFAULT_PREFERENCES,
+            id: 1,
+            problemAreas,
+            workIntervalMinutes,
+            onboardingCompleted: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+        } catch {
+          // IDB unavailable — prefs won't persist but navigation still works
+        }
         router.replace('/work');
       }}
     />
