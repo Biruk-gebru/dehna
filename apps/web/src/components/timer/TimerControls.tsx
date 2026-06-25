@@ -12,7 +12,7 @@ interface TimerControlsProps {
 export function TimerControls({ mode, onStart, onPause, onResume, onStop }: TimerControlsProps) {
   if (mode === 'idle') {
     return (
-      <Button onClick={onStart} style={{ minWidth: 160 }}>
+      <Button onClick={onStart} style={{ minWidth: 160 }} aria-label="Start work session">
         Start working
       </Button>
     );
@@ -21,15 +21,15 @@ export function TimerControls({ mode, onStart, onPause, onResume, onStop }: Time
   return (
     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
       {mode === 'running' ? (
-        <Button variant="outline" onClick={onPause} style={{ minWidth: 100 }}>
+        <Button variant="outline" onClick={onPause} style={{ minWidth: 100 }} aria-label="Pause timer">
           Pause
         </Button>
       ) : (
-        <Button variant="primary" onClick={onResume} style={{ minWidth: 100 }}>
+        <Button variant="primary" onClick={onResume} style={{ minWidth: 100 }} aria-label="Resume timer">
           Resume
         </Button>
       )}
-      <Button variant="ghost" size="sm" onClick={onStop}>
+      <Button variant="ghost" size="sm" onClick={onStop} aria-label="Stop and end work session">
         Stop
       </Button>
     </div>

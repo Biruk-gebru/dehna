@@ -139,6 +139,8 @@ function ExerciseTile({ exercise, open, onToggle }: {
       {/* Header row — always visible */}
       <button
         onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`exercise-detail-${exercise.id}`}
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr auto',
@@ -206,6 +208,9 @@ function ExerciseTile({ exercise, open, onToggle }: {
       {/* Expanded detail */}
       {open && (
         <div
+          id={`exercise-detail-${exercise.id}`}
+          role="region"
+          aria-label={exercise.name}
           style={{
             padding: '0 var(--space-5) var(--space-5)',
             borderTop: '1px solid var(--color-border)',
@@ -310,13 +315,14 @@ export default function ExercisesPage() {
         />
 
         {/* Type filter */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
           {ALL_TYPES.map((t) => {
             const active = selectedType === t;
             return (
               <button
                 key={t}
                 onClick={() => toggleType(t)}
+                aria-pressed={active}
                 style={{
                   padding: '6px 14px',
                   fontSize: 'var(--font-size-sm)',
@@ -327,6 +333,7 @@ export default function ExercisesPage() {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   transition: 'background-color 0.15s, color 0.15s',
+                  flexShrink: 0,
                 }}
               >
                 {TYPE_LABELS[t]}
@@ -336,13 +343,14 @@ export default function ExercisesPage() {
         </div>
 
         {/* Area filter */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
           {ALL_AREAS.map((a) => {
             const active = selectedArea === a;
             return (
               <button
                 key={a}
                 onClick={() => toggleArea(a)}
+                aria-pressed={active}
                 style={{
                   padding: '4px 10px',
                   fontSize: 'var(--font-size-xs)',
@@ -353,6 +361,7 @@ export default function ExercisesPage() {
                   borderRadius: '4px',
                   cursor: 'pointer',
                   transition: 'background-color 0.15s, color 0.15s',
+                  flexShrink: 0,
                 }}
               >
                 {AREA_LABELS[a]}

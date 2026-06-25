@@ -51,8 +51,18 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
         setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
         setLoading(false);
       })
-      .catch(() => {
-        if (!settled) { settled = true; clearTimeout(timeout); setLoading(false); }
+      .catch(async (err) => {
+        if (settled) return;
+        // If the IDB version upgrade failed (e.g. schema conflict from an old install),
+        // delete and recreate the database so the app stays usable.
+        if (err?.name === 'VersionError' || err?.name === 'InvalidStateError') {
+          try {
+            await import('@/lib/db').then(({ db }) => db.delete());
+          } catch {}
+        }
+        settled = true;
+        clearTimeout(timeout);
+        setLoading(false);
       });
 
     return () => { settled = true; clearTimeout(timeout); };

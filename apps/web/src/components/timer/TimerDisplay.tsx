@@ -7,6 +7,9 @@ export function TimerDisplay({ formattedTime, label }: TimerDisplayProps) {
   return (
     <div style={{ textAlign: 'center' }}>
       <div
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={`${formattedTime} ${label ?? ''}`}
         style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 'var(--font-size-2xl)',

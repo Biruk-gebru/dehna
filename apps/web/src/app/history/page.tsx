@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import type { WorkSession } from '@/types';
@@ -62,7 +62,7 @@ export default function HistoryPage() {
   const [sessions, setSessions] = useState<WorkSession[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadSessions = useCallback(() => {
     db.sessions
       .orderBy('startedAt')
       .reverse()
@@ -71,6 +71,13 @@ export default function HistoryPage() {
         setSessions(rows.filter((s) => s.status !== 'active'));
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => { loadSessions(); }, [loadSessions]);
+
+  const handleDelete = useCallback(async (id: number) => {
+    await db.sessions.delete(id);
+    setSessions((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   // Group by day
@@ -147,9 +154,21 @@ export default function HistoryPage() {
       )}
 
       {!loading && sessions.length === 0 && (
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
-          No sessions yet. Start a work session to see your history here.
-        </p>
+        <div style={{ textAlign: 'center', padding: 'var(--space-9) 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)' }}>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <rect x="8" y="12" width="32" height="28" rx="4" stroke="var(--color-border)" strokeWidth="2" fill="none" />
+            <path d="M16 20h16M16 27h10" stroke="var(--color-border)" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="36" cy="12" r="6" fill="var(--color-primary)" />
+            <path d="M33 12h6M36 9v6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <div>
+            <p style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text)', fontSize: 'var(--font-size-base)' }}>No sessions yet</p>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
+              Complete a work session to see it here.
+            </p>
+          </div>
+          <Link href="/work" className="btn btn-primary btn-sm">Start a session</Link>
+        </div>
       )}
 
       {Object.entries(grouped).map(([day, daySessions]) => (
@@ -178,9 +197,10 @@ export default function HistoryPage() {
                     padding: 'var(--space-4)',
                     backgroundColor: 'var(--color-surface)',
                     borderRadius: 'var(--radius-md)',
+                    gap: 'var(--space-3)',
                   }}
                 >
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)' }}>
                       {fmtTime(s.startedAt)}
                     </span>
@@ -205,6 +225,23 @@ export default function HistoryPage() {
                   >
                     {fmt(s.durationMinutes)}
                   </span>
+                  <button
+                    onClick={() => handleDelete(s.id as number)}
+                    aria-label={`Delete session from ${fmtTime(s.startedAt)}`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--color-border)',
+                      fontSize: '1rem',
+                      lineHeight: 1,
+                      padding: '2px 4px',
+                      borderRadius: 'var(--radius-sm)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
               );
             })}
