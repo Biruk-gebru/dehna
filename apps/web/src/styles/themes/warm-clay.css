@@ -1,0 +1,17 @@
+[data-theme="warm-clay"] {
+  --color-bg: #f5efe7;
+  --color-surface: #faf6f0;
+  --color-surface-hover: #efd9b4;
+  --color-text: #292522;
+  --color-text-muted: #6e6560;
+  --color-primary: #a39081;
+  --color-primary-hover: #8a7868;
+  --color-accent: #4d6160;
+  --color-border: #e4dbd1;
+  --color-success: #4d6160;
+  --color-warning: #d6a692;
+  --color-error: #c27a64;
+  --color-timer-ring: #d6a692;
+  --color-timer-bg: #e4dbd1;
+  --color-break-bg: #efd9b4;
+}

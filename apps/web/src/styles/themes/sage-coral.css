@@ -1,0 +1,17 @@
+[data-theme="sage-coral"] {
+  --color-bg: #f8f6f2;
+  --color-surface: #ffffff;
+  --color-surface-hover: #fecea8;
+  --color-text: #2a363b;
+  --color-text-muted: #5c6b6b;
+  --color-primary: #e84a5f;
+  --color-primary-hover: #d1384d;
+  --color-accent: #99b898;
+  --color-border: #e8e4df;
+  --color-success: #99b898;
+  --color-warning: #fecea8;
+  --color-error: #e84a5f;
+  --color-timer-ring: #99b898;
+  --color-timer-bg: #e8e4df;
+  --color-break-bg: #fecea8;
+}

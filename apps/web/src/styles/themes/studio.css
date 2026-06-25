@@ -1,0 +1,17 @@
+[data-theme="studio"] {
+  --color-bg: #faf5ee;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f6e2bb;
+  --color-text: #4a4031;
+  --color-text-muted: #7a6e60;
+  --color-primary: #fa6a64;
+  --color-primary-hover: #e05550;
+  --color-accent: #9ec6b8;
+  --color-border: #e8e0d4;
+  --color-success: #9ec6b8;
+  --color-warning: #f6e2bb;
+  --color-error: #fa6a64;
+  --color-timer-ring: #9ec6b8;
+  --color-timer-bg: #e8e0d4;
+  --color-break-bg: #f6e2bb;
+}
