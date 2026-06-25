@@ -149,6 +149,9 @@ export default function WorkPage() {
           gap: 'var(--space-3)',
         }}
       >
+        <Link href="/history" className="btn btn-ghost btn-sm">
+          History
+        </Link>
         <Link href="/settings" className="btn btn-ghost btn-sm">
           Settings
         </Link>

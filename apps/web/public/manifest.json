@@ -1,0 +1,25 @@
+{
+  "name": "Dehna",
+  "short_name": "Dehna",
+  "description": "Desk worker wellness breaks, tailored to how you feel.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#edebe6",
+  "theme_color": "#d3643b",
+  "orientation": "portrait-primary",
+  "categories": ["health", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
