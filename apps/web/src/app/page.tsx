@@ -16,12 +16,26 @@ export default function Home() {
   }, [loading, prefs?.onboardingCompleted, router]);
 
   if (loading) {
-    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} />;
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: 'var(--color-bg, #edebe6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <span style={{ fontSize: '2rem', color: 'var(--color-text-muted, #7a746a)' }}>ደህና</span>
+      </div>
+    );
   }
 
   if (prefs?.onboardingCompleted) {
-    // Already navigating to /work
-    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} />;
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: 'var(--color-bg, #edebe6)',
+      }} />
+    );
   }
 
   return (

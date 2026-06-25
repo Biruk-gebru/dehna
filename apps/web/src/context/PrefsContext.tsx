@@ -17,21 +17,29 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let settled = false;
+
+    const resolve = (existing?: UserPreferences) => {
+      if (settled) return;
+      settled = true;
+      const now = new Date().toISOString();
+      setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
+      setLoading(false);
+    };
+
+    // Safari's IndexedDB can hang silently on first access; bail after 3 s.
+    const timeout = setTimeout(() => resolve(), 3000);
+
     db.preferences
       .get(1)
-      .then((existing) => {
-        if (existing) {
-          setPrefs(existing);
-        } else {
-          const now = new Date().toISOString();
-          setPrefs({ ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
-        }
-      })
-      .catch(() => {
-        const now = new Date().toISOString();
-        setPrefs({ ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
-      })
-      .finally(() => setLoading(false));
+      .then((existing) => resolve(existing))
+      .catch(() => resolve())
+      .finally(() => clearTimeout(timeout));
+
+    return () => {
+      settled = true;
+      clearTimeout(timeout);
+    };
   }, []);
 
   const updatePrefs = useCallback(
