@@ -236,13 +236,17 @@ textarea {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(-360deg); }
 }
-@keyframes ev-arm-lift {
+@keyframes ev-arm-l-lift {
   0%, 100% { transform: rotate(0deg); }
-  50%      { transform: rotate(-82deg); }
+  50%      { transform: rotate(-78deg); }
+}
+@keyframes ev-arm-r-lift {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(78deg); }
 }
 @keyframes ev-arm-cross {
-  0%, 100% { transform: rotate(0deg) translateX(0); }
-  50%      { transform: rotate(-30deg) translateX(14px); }
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-62deg); }
 }
 @keyframes ev-wrist-l {
   0%   { transform: rotate(0deg); }
@@ -274,11 +278,12 @@ textarea {
 .ev-torso-breath     { animation: ev-breath        4s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-arm-l-roll   { animation: ev-arm-roll-l  2.5s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-arm-r-roll   { animation: ev-arm-roll-r  2.5s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-arm-l-lift   { animation: ev-arm-lift    3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-arm-r-lift   { animation: ev-arm-lift    3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-arm-r-cross  { animation: ev-arm-cross   3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-wrist-l      { animation: ev-wrist-l     2s linear infinite;      transform-origin: 50% 100%; transform-box: fill-box; }
-.ev-wrist-r      { animation: ev-wrist-r     2s linear infinite;      transform-origin: 50% 100%; transform-box: fill-box; }
+.ev-arm-l-lift   { animation: ev-arm-l-lift  3s ease-in-out infinite;   transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-arm-r-lift   { animation: ev-arm-r-lift  3s ease-in-out infinite;   transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-arm-r-cross  { animation: ev-arm-cross   3s ease-in-out infinite;   transform-origin: 50% 0%; transform-box: fill-box; }
+/* Wrist animations pivot at elbow (top of forearm group bounding box = 50% 0%) */
+.ev-wrist-l      { animation: ev-wrist-l     2s linear infinite;         transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-wrist-r      { animation: ev-wrist-r     2s linear infinite;         transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-whole-squat  { animation: ev-squat       2s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
 .ev-whole-calf   { animation: ev-calf        2s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
 .ev-iris-far     { animation: ev-iris-far    3s ease-in-out infinite; transform-origin: 50% 50%; transform-box: fill-box; }
