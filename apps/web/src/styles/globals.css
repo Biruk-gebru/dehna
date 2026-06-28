@@ -228,13 +228,24 @@ textarea {
   0%, 100% { transform: rotate(-22deg); }
   50%      { transform: rotate(22deg); }
 }
+/* Shoulder roll: lift → back → drop → forward. Max deviation ~14° so arms stay near vertical. */
 @keyframes ev-arm-roll-l {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0%         { transform: translateY(0)    rotate(0deg); }
+  18%        { transform: translateY(-9px) rotate(-6deg); }
+  40%        { transform: translateY(-5px) rotate(-13deg); }
+  56%        { transform: translateY(0)    rotate(-2deg); }
+  74%        { transform: translateY(-4px) rotate(11deg); }
+  90%        { transform: translateY(-1px) rotate(5deg); }
+  100%       { transform: translateY(0)    rotate(0deg); }
 }
 @keyframes ev-arm-roll-r {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(-360deg); }
+  0%         { transform: translateY(0)    rotate(0deg); }
+  18%        { transform: translateY(-9px) rotate(6deg); }
+  40%        { transform: translateY(-5px) rotate(13deg); }
+  56%        { transform: translateY(0)    rotate(2deg); }
+  74%        { transform: translateY(-4px) rotate(-11deg); }
+  90%        { transform: translateY(-1px) rotate(-5deg); }
+  100%       { transform: translateY(0)    rotate(0deg); }
 }
 @keyframes ev-arm-l-lift {
   0%, 100% { transform: rotate(0deg); }
@@ -248,13 +259,16 @@ textarea {
   0%, 100% { transform: rotate(0deg); }
   50%      { transform: rotate(-62deg); }
 }
+/* Wrist circles: gentle oscillation — full 360° looks like arm-flailing on a single-piece limb */
 @keyframes ev-wrist-l {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-22deg); }
+  75%      { transform: rotate(22deg); }
 }
 @keyframes ev-wrist-r {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(-360deg); }
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(22deg); }
+  75%      { transform: rotate(-22deg); }
 }
 @keyframes ev-breath {
   0%, 100% { transform: scaleX(1) scaleY(1); }
@@ -276,14 +290,13 @@ textarea {
 .ev-torso-twist      { animation: ev-torso-twist   3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-torso-back-ext   { animation: ev-back-ext      3s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-torso-breath     { animation: ev-breath        4s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-arm-l-roll   { animation: ev-arm-roll-l  2.5s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-arm-r-roll   { animation: ev-arm-roll-r  2.5s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-arm-l-roll   { animation: ev-arm-roll-l  4s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-arm-r-roll   { animation: ev-arm-roll-r  4s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-arm-l-lift   { animation: ev-arm-l-lift  3s ease-in-out infinite;   transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-arm-r-lift   { animation: ev-arm-r-lift  3s ease-in-out infinite;   transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-arm-r-cross  { animation: ev-arm-cross   3s ease-in-out infinite;   transform-origin: 50% 0%; transform-box: fill-box; }
-/* Wrist animations pivot at elbow (top of forearm group bounding box = 50% 0%) */
-.ev-wrist-l      { animation: ev-wrist-l     2s linear infinite;         transform-origin: 50% 0%; transform-box: fill-box; }
-.ev-wrist-r      { animation: ev-wrist-r     2s linear infinite;         transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-wrist-l      { animation: ev-wrist-l 1.8s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
+.ev-wrist-r      { animation: ev-wrist-r 1.8s ease-in-out infinite; transform-origin: 50% 0%; transform-box: fill-box; }
 .ev-whole-squat  { animation: ev-squat       2s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
 .ev-whole-calf   { animation: ev-calf        2s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
 .ev-iris-far     { animation: ev-iris-far    3s ease-in-out infinite; transform-origin: 50% 50%; transform-box: fill-box; }
