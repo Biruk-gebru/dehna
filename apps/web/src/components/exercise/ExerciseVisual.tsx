@@ -1,44 +1,263 @@
 'use client';
 
 import type { Exercise } from '@/types';
+import { FigureRig, type Pose } from './FigureRig';
 
 interface Props {
   exercise: Exercise;
 }
 
-type BodyClasses = {
-  head?:  string;
-  torso?: string;
-  armL?:  string;
-  armR?:  string;
-  whole?: string;
-};
+// ─── Pose sequences ───────────────────────────────────────────────────────────
+// Each array defines a looping cycle: poses[last] → poses[0] → poses[1] → …
+// durationMs is the time to reach that pose from the previous one.
 
-function getBodyClasses(id: string): BodyClasses {
+// Default: slow breathing used for any exercise without a specific animation yet
+const BREATHE: Pose[] = [
+  { angles: { spine: 2, shoulderL: -14, shoulderR: 14 }, durationMs: 2600 },
+  { angles: {},                                           durationMs: 2600 },
+];
+
+// ── Neck ──────────────────────────────────────────────────────────────────────
+
+const NECK_SIDE_TILT: Pose[] = [
+  { angles: { neck: -22 }, durationMs: 1400 },
+  { angles: { neck: 0 },   durationMs: 900 },
+  { angles: { neck: 22 },  durationMs: 1400 },
+  { angles: { neck: 0 },   durationMs: 900 },
+];
+
+const NECK_ROTATION: Pose[] = [
+  { angles: { neck: -28 }, durationMs: 1300 },
+  { angles: { neck: 0 },   durationMs: 800 },
+  { angles: { neck: 28 },  durationMs: 1300 },
+  { angles: { neck: 0 },   durationMs: 800 },
+];
+
+const NECK_CHIN_TUCK: Pose[] = [
+  { angles: { head: 14 },  durationMs: 900 },
+  { angles: { head: 0 },   durationMs: 700 },
+];
+
+const NECK_UPPER_TRAP: Pose[] = [
+  { angles: { neck: -20, shoulderR: 14 }, durationMs: 1400 },
+  { angles: { neck: 0 },                  durationMs: 800 },
+  { angles: { neck: 20, shoulderL: -14 }, durationMs: 1400 },
+  { angles: { neck: 0 },                  durationMs: 800 },
+];
+
+const NECK_LEVATOR_SCAP: Pose[] = [
+  { angles: { neck: -18, head: 12 },  durationMs: 1500 },
+  { angles: { neck: 0, head: 0 },     durationMs: 900 },
+  { angles: { neck: 18, head: -12 },  durationMs: 1500 },
+  { angles: { neck: 0, head: 0 },     durationMs: 900 },
+];
+
+// ── Shoulders ─────────────────────────────────────────────────────────────────
+
+// Shoulder roll: arms sweep back (inward) then forward (outward)
+const SHOULDER_ROLLS: Pose[] = [
+  { angles: { shoulderL: 8,   elbowL: 25, shoulderR: -8,  elbowR: -25 }, durationMs: 900 },
+  { angles: { shoulderL: -12, elbowL: 8,  shoulderR: 12,  elbowR: -8  }, durationMs: 600 },
+  { angles: { shoulderL: -45, elbowL: -5, shoulderR: 45,  elbowR: 5   }, durationMs: 900 },
+  { angles: { shoulderL: -12, elbowL: 8,  shoulderR: 12,  elbowR: -8  }, durationMs: 600 },
+];
+
+// Scapular squeeze: elbows pull back, shoulders retract
+const SCAPULAR_SQUEEZE: Pose[] = [
+  { angles: { shoulderL: -5, elbowL: 35, shoulderR: 5, elbowR: -35 }, durationMs: 1100 },
+  { angles: {},                                                         durationMs: 800 },
+];
+
+// Cross-body: right arm crosses to the left
+const CROSS_BODY: Pose[] = [
+  { angles: { shoulderR: -55, elbowR: 25 }, durationMs: 1200 },
+  { angles: {},                              durationMs: 900 },
+];
+
+// Overhead reach: both arms lift, slight side-to-side sway
+const OVERHEAD_REACH: Pose[] = [
+  { angles: { shoulderL: -88, elbowL: -8,  shoulderR: 88,  elbowR: 8,  spine: -5 }, durationMs: 1300 },
+  { angles: { shoulderL: -88, elbowL: -8,  shoulderR: 88,  elbowR: 8,  spine: 5  }, durationMs: 1300 },
+];
+
+// Doorframe: left arm up and out at 90° (L-shape)
+const DOORFRAME: Pose[] = [
+  { angles: { shoulderL: -82, elbowL: -85, shoulderR: 12, elbowR: -8 }, durationMs: 1400 },
+  { angles: {},                                                           durationMs: 900 },
+  { angles: { shoulderR: 82,  elbowR: 85,  shoulderL: -12, elbowL: 8 }, durationMs: 1400 },
+  { angles: {},                                                           durationMs: 900 },
+];
+
+// ── Back ──────────────────────────────────────────────────────────────────────
+
+const CAT_COW: Pose[] = [
+  { angles: { spine: 10  }, durationMs: 1400 },
+  { angles: { spine: -10 }, durationMs: 1400 },
+];
+
+const THORACIC_ROTATION: Pose[] = [
+  { angles: { spine: -16 }, durationMs: 1200 },
+  { angles: { spine: 0 },   durationMs: 700 },
+  { angles: { spine: 16 },  durationMs: 1200 },
+  { angles: { spine: 0 },   durationMs: 700 },
+];
+
+const SIDE_BEND: Pose[] = [
+  { angles: { spine: -14, shoulderL: -68, elbowL: 0 },  durationMs: 1400 },
+  { angles: { spine: 0 },                                durationMs: 700 },
+  { angles: { spine: 14,  shoulderR: 68,  elbowR: 0 },  durationMs: 1400 },
+  { angles: { spine: 0 },                                durationMs: 700 },
+];
+
+const SPINAL_TWIST: Pose[] = [
+  { angles: { spine: -16, shoulderR: -40, elbowR: 20 }, durationMs: 1400 },
+  { angles: { spine: 0 },                               durationMs: 800 },
+  { angles: { spine: 16,  shoulderL: 40,  elbowL: -20 }, durationMs: 1400 },
+  { angles: { spine: 0 },                               durationMs: 800 },
+];
+
+const BACK_EXTENSION: Pose[] = [
+  { angles: { spine: -12, shoulderL: -8, shoulderR: 8 }, durationMs: 1200 },
+  { angles: { spine: 0 },                                durationMs: 900 },
+];
+
+const CHEST_OPENER: Pose[] = [
+  { angles: { shoulderL: 16, elbowL: 40, shoulderR: -16, elbowR: -40 }, durationMs: 1300 },
+  { angles: {},                                                           durationMs: 900 },
+];
+
+const FORWARD_FOLD: Pose[] = [
+  { angles: { spine: 22, shoulderL: -5, elbowL: 20, shoulderR: 5, elbowR: -20 }, durationMs: 1500 },
+  { angles: { spine: 0 },                                                          durationMs: 1000 },
+];
+
+// ── Wrists / Elbows ───────────────────────────────────────────────────────────
+
+// Arms extended forward (elbows bent in), wrists oscillate
+const WRIST_CIRCLES: Pose[] = [
+  { angles: { shoulderL: -45, elbowL: 60, wristL: 35, shoulderR: 45, elbowR: -60, wristR: -35 }, durationMs: 900 },
+  { angles: { shoulderL: -45, elbowL: 60, wristL: -35, shoulderR: 45, elbowR: -60, wristR: 35 }, durationMs: 900 },
+];
+
+const WRIST_PRAYER: Pose[] = [
+  { angles: { shoulderL: -30, elbowL: 60, wristL: 15, shoulderR: 30, elbowR: -60, wristR: -15 }, durationMs: 1400 },
+  { angles: {},                                                                                     durationMs: 1000 },
+];
+
+const WRIST_EXTENSOR: Pose[] = [
+  { angles: { shoulderR: 45, elbowR: -60, wristR: -35 }, durationMs: 1200 },
+  { angles: { shoulderR: 45, elbowR: -60, wristR: 35  }, durationMs: 1200 },
+];
+
+const FINGER_SPREADS: Pose[] = [
+  { angles: { shoulderL: -30, elbowL: 55, wristL: 22, shoulderR: 30, elbowR: -55, wristR: -22 }, durationMs: 800 },
+  { angles: { shoulderL: -30, elbowL: 55, wristL: -22, shoulderR: 30, elbowR: -55, wristR: 22 }, durationMs: 800 },
+];
+
+const FOREARM_ROTATION: Pose[] = [
+  { angles: { shoulderL: -32, elbowL: 55, wristL: 38, shoulderR: 32, elbowR: -55, wristR: -38 }, durationMs: 1100 },
+  { angles: { shoulderL: -32, elbowL: 55, wristL: -38, shoulderR: 32, elbowR: -55, wristR: 38 }, durationMs: 1100 },
+];
+
+// ── Hips / Legs ───────────────────────────────────────────────────────────────
+
+const HIP_FLEXOR: Pose[] = [
+  { angles: { hipR: -12, kneeR: 8, spine: 3 },  durationMs: 1500 },
+  { angles: {},                                   durationMs: 900 },
+  { angles: { hipL: 12,  kneeL: -8, spine: -3 }, durationMs: 1500 },
+  { angles: {},                                   durationMs: 900 },
+];
+
+const FIGURE_FOUR: Pose[] = [
+  { angles: { hipR: 20, kneeR: -30 }, durationMs: 1500 },
+  { angles: {},                       durationMs: 1000 },
+];
+
+const ANKLE_CIRCLES: Pose[] = [
+  { angles: { hipR: -8, kneeR: -12, rootY: -4 }, durationMs: 700 },
+  { angles: { hipR: -8, kneeR: -12, rootY: 4  }, durationMs: 700 },
+];
+
+const CALF_RAISES: Pose[] = [
+  { angles: { rootY: -10, kneeL: -4, kneeR: -4 }, durationMs: 1000 },
+  { angles: { rootY: 0 },                          durationMs: 800 },
+];
+
+const HIP_CIRCLES: Pose[] = [
+  { angles: { spine: 6,  hipL: -8, hipR: 4 },  durationMs: 700 },
+  { angles: { spine: -6, hipL: 4,  hipR: -8 }, durationMs: 700 },
+];
+
+const HAMSTRING_DESK: Pose[] = [
+  { angles: { hipR: -42, kneeR: 5,  spine: 8 },  durationMs: 1500 },
+  { angles: {},                                   durationMs: 900 },
+  { angles: { hipL: 42,  kneeL: -5, spine: -8 }, durationMs: 1500 },
+  { angles: {},                                   durationMs: 900 },
+];
+
+const SEATED_EXTENSION: Pose[] = [
+  { angles: { kneeR: -30 }, durationMs: 1100 },
+  { angles: {},              durationMs: 700 },
+];
+
+const CALF_STRETCH: Pose[] = [
+  { angles: { hipL: -10, kneeL: 8, spine: 5 },  durationMs: 1400 },
+  { angles: {},                                  durationMs: 800 },
+  { angles: { hipR: 10,  kneeR: -8, spine: -5 }, durationMs: 1400 },
+  { angles: {},                                  durationMs: 800 },
+];
+
+const GLUTE_SQUEEZE: Pose[] = [
+  { angles: { hipL: -3, hipR: 3, kneeL: -4, kneeR: 4 }, durationMs: 900 },
+  { angles: {},                                           durationMs: 700 },
+];
+
+// ─── Pose selector ───────────────────────────────────────────────────────────
+
+function getPoses(id: string): Pose[] {
   switch (id) {
-    case 'back-cat-cow-01':           return { torso: 'ev-torso-cat-cow' };
-    case 'back-thoracic-rotation-01': return { torso: 'ev-torso-twist' };
-    case 'back-side-bend-01':         return { torso: 'ev-torso-side-bend' };
-    case 'back-spinal-twist-01':      return { torso: 'ev-torso-twist' };
-    case 'back-extension-01':         return { torso: 'ev-torso-back-ext' };
-    case 'shoulder-rolls-01':         return { armL: 'ev-arm-l-roll', armR: 'ev-arm-r-roll' };
-    case 'shoulder-cross-body-01':    return { armR: 'ev-arm-r-cross' };
-    case 'shoulder-doorframe-01':     return { armL: 'ev-arm-l-lift', armR: 'ev-arm-r-lift' };
-    case 'wrist-circles-01':          return { armL: 'ev-wrist-l',    armR: 'ev-wrist-r' };
-    case 'wrist-prayer-01':           return { armL: 'ev-arm-l-lift', armR: 'ev-arm-r-lift' };
-    case 'general-breathing-01':      return { torso: 'ev-torso-breath' };
-    case 'general-box-breathing-01':  return { torso: 'ev-torso-breath' };
+    // Neck
+    case 'neck-side-tilt-01':      return NECK_SIDE_TILT;
+    case 'neck-rotation-01':       return NECK_ROTATION;
+    case 'neck-chin-tuck-01':      return NECK_CHIN_TUCK;
+    case 'neck-upper-trap-01':     return NECK_UPPER_TRAP;
+    case 'neck-levator-scap-01':   return NECK_LEVATOR_SCAP;
+    // Shoulders
+    case 'shoulder-rolls-01':          return SHOULDER_ROLLS;
+    case 'shoulder-scapular-squeeze-01': return SCAPULAR_SQUEEZE;
+    case 'shoulder-cross-body-01':     return CROSS_BODY;
+    case 'shoulder-overhead-reach-01': return OVERHEAD_REACH;
+    case 'shoulder-doorframe-01':      return DOORFRAME;
+    // Back
+    case 'back-cat-cow-01':          return CAT_COW;
+    case 'back-thoracic-rotation-01': return THORACIC_ROTATION;
+    case 'back-side-bend-01':        return SIDE_BEND;
+    case 'back-spinal-twist-01':     return SPINAL_TWIST;
+    case 'back-extension-01':        return BACK_EXTENSION;
+    case 'back-chest-opener-01':     return CHEST_OPENER;
+    case 'back-forward-fold-01':     return FORWARD_FOLD;
+    // Wrists
+    case 'wrist-circles-01':         return WRIST_CIRCLES;
+    case 'wrist-prayer-01':          return WRIST_PRAYER;
+    case 'wrist-extensor-01':        return WRIST_EXTENSOR;
+    case 'wrist-finger-spreads-01':  return FINGER_SPREADS;
+    case 'wrist-forearm-rotation-01': return FOREARM_ROTATION;
+    // Hips / Legs
+    case 'hips-seated-hip-flexor-01': return HIP_FLEXOR;
+    case 'hips-figure-four-01':       return FIGURE_FOUR;
+    case 'hips-ankle-circles-01':     return ANKLE_CIRCLES;
+    case 'hips-calf-raises-01':       return CALF_RAISES;
+    case 'hips-hip-circles-01':       return HIP_CIRCLES;
+    case 'legs-hamstring-desk-01':    return HAMSTRING_DESK;
+    case 'legs-seated-extension-01':  return SEATED_EXTENSION;
+    case 'legs-calf-stretch-01':      return CALF_STRETCH;
+    case 'legs-glute-squeeze-01':     return GLUTE_SQUEEZE;
+    // Cognitive / unspecified → gentle breathing
+    default: return BREATHE;
   }
-  if (id.startsWith('back-'))     return { torso: 'ev-torso-cat-cow' };
-  if (id.startsWith('neck-'))     return { head: 'ev-head-tilt' };
-  if (id.startsWith('shoulder-')) return { armL: 'ev-arm-l-roll', armR: 'ev-arm-r-roll' };
-  if (id.startsWith('wrist-'))    return { armL: 'ev-wrist-l',    armR: 'ev-wrist-r' };
-  if (id.startsWith('hips-') || id.startsWith('legs-')) return { whole: 'ev-whole-squat' };
-  if (id.startsWith('strength-')) return { whole: 'ev-whole-squat' };
-  return { torso: 'ev-torso-breath' };
 }
 
-// ─── Eye visual ──────────────────────────────────────────────────────────────
+// ─── Eye visual (unchanged) ───────────────────────────────────────────────────
 
 function EyeVisual({ id }: { id: string }) {
   const isPalming = id === 'eyes-palming-01';
@@ -104,95 +323,6 @@ function EyeVisual({ id }: { id: string }) {
   );
 }
 
-// ─── Body figure ──────────────────────────────────────────────────────────────
-//
-// Each limb is a single continuous tapered path — no segmented sub-groups.
-// This eliminates the visible joint gaps that made the figure look like a puppet.
-//
-// Animation structure: outer <g> positions + angles the limb in SVG space;
-// inner <g> carries the CSS animation class. The inner group has no SVG
-// transform, so transform-box:fill-box computes a clean bounding box with
-// origin at (0,0) = the joint attachment point.
-//
-// Tapered arm path (local coords, y=0 at shoulder, y=112 at wrist):
-//   M-9,0 Q-11,56 -4.5,112 L4.5,112 Q11,56 9,0 Z
-//   → 18 px wide at shoulder, 9 px at wrist, slight outward belly curve.
-//
-// Tapered leg path (local coords, y=0 at hip, y=116 at ankle):
-//   M-10,0 Q-11,58 -6,116 L6,116 Q11,58 10,0 Z
-//   → 20 px wide at hip, 12 px at ankle.
-
-const C  = '#3a2c1e';  // front / near limbs
-const CB = '#6b5040';  // back / far limbs
-
-function BodyFigure({ classes }: { classes: BodyClasses }) {
-  const headCls  = classes.head  ?? '';
-  const torsoCls = classes.torso ?? '';
-  const armLCls  = classes.armL  ?? '';
-  const armRCls  = classes.armR  ?? '';
-  const wholeCls = classes.whole ?? '';
-
-  return (
-    <svg viewBox="0 0 200 290" width="150" height="215" aria-hidden="true" style={{ overflow: 'visible' }}>
-      <g className={wholeCls || undefined}>
-
-        {/* ── Right leg (behind) ── */}
-        <g transform="translate(116,152) rotate(-4)">
-          <path d="M-10,0 Q-11,58 -6,116 L6,116 Q11,58 10,0 Z" fill={CB} />
-          <ellipse cx="0" cy="119" rx="15" ry="6" fill={CB} />
-        </g>
-
-        {/* ── Right arm (behind) — pivot at shoulder (128,63) ── */}
-        <g transform="translate(128,63) rotate(-7)">
-          <g className={armRCls || undefined}>
-            <path d="M-9,0 Q-11,56 -4.5,112 L4.5,112 Q11,56 9,0 Z" fill={CB} />
-            <ellipse cx="0" cy="114" rx="7" ry="4.5" fill={CB} />
-          </g>
-        </g>
-
-        {/* ── Torso — pivot at shoulder-line top-center ── */}
-        <g transform="translate(100,63)">
-          <g className={torsoCls || undefined}>
-            <path
-              d="M-28,0 Q-32,25 -24,47 Q-26,69 -24,89 L24,89 Q26,69 24,47 Q32,25 28,0 Q15,-4 0,-4 Q-15,-4 -28,0 Z"
-              fill={C}
-            />
-            <path d="M-12,0 Q0,10 12,0" fill="none" stroke={CB} strokeWidth="1.5" />
-          </g>
-        </g>
-
-        {/* ── Left arm (front) — pivot at shoulder (72,63) ── */}
-        <g transform="translate(72,63) rotate(7)">
-          <g className={armLCls || undefined}>
-            <path d="M-9,0 Q-11,56 -4.5,112 L4.5,112 Q11,56 9,0 Z" fill={C} />
-            <ellipse cx="0" cy="114" rx="7" ry="4.5" fill={C} />
-          </g>
-        </g>
-
-        {/* ── Left leg (front) ── */}
-        <g transform="translate(84,152) rotate(4)">
-          <path d="M-10,0 Q-11,58 -6,116 L6,116 Q11,58 10,0 Z" fill={C} />
-          <ellipse cx="0" cy="119" rx="15" ry="6" fill={C} />
-        </g>
-
-        {/* ── Head + neck — pivot at neck base = (100,63) ── */}
-        {/* Bounding box: x=-22..22, y=-59..0  → 50% 100% lands at (0,0) = neck-shoulder junction */}
-        <g transform="translate(100,63)">
-          <g className={headCls || undefined}>
-            <rect x="-6" y="-15" width="12" height="15" rx="5" fill={C} />
-            <circle cx="0" cy="-37" r="22" fill={C} />
-            <circle cx="-7" cy="-40" r="2.5" fill="white" opacity="0.6" />
-            <circle cx="7"  cy="-40" r="2.5" fill="white" opacity="0.6" />
-            <path d="M-5,-30 Q0,-25 5,-30" fill="none" stroke="white" strokeWidth="1.5"
-                  strokeLinecap="round" opacity="0.45" />
-          </g>
-        </g>
-
-      </g>
-    </svg>
-  );
-}
-
 // ─── Public component ─────────────────────────────────────────────────────────
 
 export function ExerciseVisual({ exercise }: Props) {
@@ -208,7 +338,7 @@ export function ExerciseVisual({ exercise }: Props) {
       {exercise.type === 'eye-break' ? (
         <EyeVisual id={exercise.id} />
       ) : (
-        <BodyFigure classes={getBodyClasses(exercise.id)} />
+        <FigureRig poses={getPoses(exercise.id)} />
       )}
     </div>
   );
