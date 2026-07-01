@@ -67,9 +67,10 @@ function cascadedLerp(
 
 interface Props {
   poses: Pose[];
+  seated?: boolean;
 }
 
-export function FigureRig({ poses }: Props) {
+export function FigureRig({ poses, seated }: Props) {
   const rootRef      = useRef<SVGGElement>(null);
   const spineRef     = useRef<SVGGElement>(null);
   const neckRef      = useRef<SVGGElement>(null);
@@ -185,6 +186,20 @@ export function FigureRig({ poses }: Props) {
       aria-hidden="true"
       style={{ overflow: 'visible' }}
     >
+      {/* Chair (seated exercises only) — drawn behind figure */}
+      {seated && (
+        <g opacity={0.35} fill="var(--color-text-muted)">
+          {/* seat */}
+          <rect x={62} y={172} width={76} height={7} rx={3.5} />
+          {/* left upright */}
+          <rect x={63} y={120} width={6} height={52} rx={3} />
+          {/* right upright */}
+          <rect x={131} y={120} width={6} height={52} rx={3} />
+          {/* top rail */}
+          <rect x={62} y={117} width={76} height={6} rx={3} />
+        </g>
+      )}
+
       {/* Whole-figure vertical offset (calf raises, squats) */}
       <g ref={rootRef}>
         {/* Pelvis anchor */}
