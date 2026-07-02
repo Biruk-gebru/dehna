@@ -390,7 +390,11 @@ export function ExerciseVisual({ exercise }: Props) {
       {exercise.type === 'eye-break' ? (
         <EyeVisual id={exercise.id} />
       ) : (
-        <FigureRig poses={getPoses(exercise.id)} seated={SEATED_IDS.has(exercise.id)} />
+        <FigureRig
+          poses={getPoses(exercise.id)}
+          seated={SEATED_IDS.has(exercise.id)}
+          static={exercise.type === 'cognitive'}
+        />
       )}
     </div>
   );

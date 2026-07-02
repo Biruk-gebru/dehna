@@ -41,10 +41,10 @@ function smoothDamp(
 
 const REST: Required<JointAngles> = {
   rootY: 0, torso: 0, head: 0,
-  lShoulder: -12, lElbow: 8,  lWrist: 0,
-  rShoulder:  12, rElbow: -8, rWrist: 0,
-  lHip: -6, lKnee: 0, lAnkle: 0,
-  rHip:  6, rKnee: 0, rAnkle: 0,
+  lShoulder: -20, lElbow: 36, lWrist: -6,
+  rShoulder:  20, rElbow: -36, rWrist: 6,
+  lHip: -8, lKnee: -6, lAnkle: -18,
+  rHip:  8, rKnee: 6,  rAnkle: 18,
 };
 
 // Seconds-to-target per joint. Core moves first (short); extremities trail
@@ -65,9 +65,11 @@ const JOINT_KEYS = Object.keys(SMOOTH_TIME) as (keyof Required<JointAngles>)[];
 interface Props {
   poses: Pose[];
   seated?: boolean;
+  /** Render the neutral rest pose with no motion at all — used for cognitive exercises. */
+  static?: boolean;
 }
 
-export function FigureRig({ poses, seated }: Props) {
+export function FigureRig({ poses, seated, static: isStatic }: Props) {
   const rootRef      = useRef<SVGGElement>(null);
   const torsoRef      = useRef<SVGGElement>(null);
   const headRef      = useRef<SVGGElement>(null);
@@ -85,6 +87,7 @@ export function FigureRig({ poses, seated }: Props) {
   const ankleRRef    = useRef<SVGGElement>(null);
 
   useEffect(() => {
+    if (isStatic) return; // frozen at REST — set once below, no rAF loop
     if (!poses.length) return;
     const total = poses.reduce((s, p) => s + p.durationMs, 0);
     if (total <= 0) return;
@@ -157,35 +160,30 @@ export function FigureRig({ poses, seated }: Props) {
 
     rafId = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafId);
-  }, [poses]);
+  }, [poses, isStatic]);
 
   // ─── Visual constants ────────────────────────────────────────────────────
-  const BONE  = 'var(--color-text-muted)';  // limb lines
-  const DOT   = 'var(--color-primary)';      // joint dots
-  const HEAD  = 'var(--color-text)';         // head outline
+  const BONE = '#3a332d';  // dark warm charcoal — limb lines
+  const JT   = '#9a8e82';  // muted warm gray — joint dots, chair
 
-  // Bone lengths (px in SVG units) — weight tapers down the chain
-  const TORSO   = 60;
-  const NECK    = 16;
+  // Bone lengths (px in SVG units)
+  const NECK    = 8;
   const HEAD_R  = 20;
-  const UA      = 38;  // upper arm
-  const FA      = 32;  // forearm
+  const UA      = 46;  // upper arm — reaches down to roughly hip height
+  const FA      = 40;  // forearm — bends back in toward centerline
   const HAND    = 8;
   const THIGH   = 50;
   const SHIN    = 44;
-  const FOOT    = 14;
+  const FOOT    = 13;
+
+  const rot = (deg: number) => `rotate(${deg})`;
 
   // ─── SVG hierarchy — kinematic chain, legs mirrored via scale(-1,1) ─────
   //
-  //   Root pelvis:  translate(100, 178)
-  //     Torso rotation group (rotates whole upper body + drags shoulder/head)
-  //       Spine bone → shoulder line at local (0,-60)
-  //         Head group (neck + head circle)
-  //         L/R arm chains: shoulder → elbow → wrist → hand
-  //     L/R leg chains, each mirrored with scale(side,1) so a single
-  //     positive hip angle spreads both legs outward symmetrically —
-  //     without mirroring, both legs would rotate the same direction
-  //     and overlap.
+  // No separate spine/collarbone bone is drawn: arms hang directly from the
+  // neck point and their shoulder→elbow→wrist bend forms the torso's visual
+  // silhouette (matching the reference figure). Legs mirror via scale(side,1)
+  // so one positive hip angle spreads both legs outward symmetrically.
 
   const Leg = ({
     side, hipRef, kneeRef, ankleRef,
@@ -195,20 +193,20 @@ export function FigureRig({ poses, seated }: Props) {
     kneeRef: React.RefObject<SVGGElement | null>;
     ankleRef: React.RefObject<SVGGElement | null>;
   }) => (
-    <g transform={`translate(${side * 12}, 0)`}>
-      <circle r={4.5} fill={DOT} />
+    <g transform={`translate(${side * 9}, 0)`}>
+      <circle r={4} fill={JT} />
       <g transform={`scale(${side}, 1)`}>
-        <g ref={hipRef}>
+        <g ref={hipRef} transform={rot(REST[side === -1 ? 'lHip' : 'rHip'])}>
           <line y2={THIGH} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
           <g transform={`translate(0,${THIGH})`}>
-            <circle r={3.5} fill={DOT} />
-            <g ref={kneeRef}>
+            <circle r={3.2} fill={JT} />
+            <g ref={kneeRef} transform={rot(REST[side === -1 ? 'lKnee' : 'rKnee'])}>
               <line y2={SHIN} stroke={BONE} strokeWidth={2.7} strokeLinecap="round" />
               <g transform={`translate(0,${SHIN})`}>
-                <circle r={2.5} fill={DOT} />
-                <g ref={ankleRef}>
+                <circle r={2.4} fill={JT} />
+                <g ref={ankleRef} transform={rot(REST[side === -1 ? 'lAnkle' : 'rAnkle'])}>
                   <line x2={FOOT} y2={2} stroke={BONE} strokeWidth={2.2} strokeLinecap="round" />
-                  <circle cx={FOOT} cy={2} r={1.8} fill={DOT} />
+                  <circle cx={FOOT} cy={2} r={1.6} fill={JT} />
                 </g>
               </g>
             </g>
@@ -226,17 +224,16 @@ export function FigureRig({ poses, seated }: Props) {
     elbowRef: React.RefObject<SVGGElement | null>;
     wristRef: React.RefObject<SVGGElement | null>;
   }) => (
-    <g transform={`translate(${side * 22}, 0)`}>
-      <circle r={4.5} fill={DOT} />
-      <g ref={shoulderRef}>
+    <g transform={`translate(${side * 3}, 0)`}>
+      <g ref={shoulderRef} transform={rot(REST[side === -1 ? 'lShoulder' : 'rShoulder'])}>
         <line y2={UA} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
         <g transform={`translate(0,${UA})`}>
-          <circle r={3.5} fill={DOT} />
-          <g ref={elbowRef}>
+          <circle r={3} fill={JT} />
+          <g ref={elbowRef} transform={rot(REST[side === -1 ? 'lElbow' : 'rElbow'])}>
             <line y2={FA} stroke={BONE} strokeWidth={2.6} strokeLinecap="round" />
             <g transform={`translate(0,${FA})`}>
-              <circle r={2.5} fill={DOT} />
-              <g ref={wristRef}>
+              <circle r={2.6} fill={JT} />
+              <g ref={wristRef} transform={rot(REST[side === -1 ? 'lWrist' : 'rWrist'])}>
                 <line y2={HAND} stroke={BONE} strokeWidth={1.9} strokeLinecap="round" />
               </g>
             </g>
@@ -254,16 +251,37 @@ export function FigureRig({ poses, seated }: Props) {
       aria-hidden="true"
       style={{ overflow: 'visible' }}
     >
-      {/* Chair — drawn behind the figure at low opacity for seated exercises */}
+      {/* Office chair — drawn behind the figure at low opacity */}
       {seated && (
-        <g opacity={0.28} fill="none" stroke={BONE} strokeWidth={3} strokeLinecap="round">
-          <line x1={68}  y1={178} x2={68}  y2={230} />
-          <line x1={132} y1={178} x2={132} y2={230} />
-          <line x1={64}  y1={178} x2={136} y2={178} />
-          <path d="M 68,178 Q 66,140 76,118 Q 82,104 100,102 Q 118,104 124,118 Q 134,140 132,178"
-                strokeWidth={4} />
-          <line x1={68}  y1={230} x2={56}  y2={252} />
-          <line x1={132} y1={230} x2={144} y2={252} />
+        <g opacity={0.32}>
+          {/* seat cushion */}
+          <rect x={63} y={172} width={74} height={9} rx={4} fill={JT} opacity={0.55} />
+          {/* curved backrest */}
+          <path
+            d="M 70,172 Q 67,132 78,108 Q 85,92 100,90 Q 115,92 122,108 Q 133,132 130,172"
+            fill="none" stroke={JT} strokeWidth={4} strokeLinecap="round"
+          />
+          <path
+            d="M 75,170 Q 73,132 82,111 Q 88,98 100,96 Q 112,98 118,111 Q 127,132 125,170 Z"
+            fill={JT} opacity={0.12}
+          />
+          {/* armrests */}
+          <line x1={63} y1={158} x2={48} y2={158} stroke={JT} strokeWidth={2.5} strokeLinecap="round" />
+          <line x1={137} y1={158} x2={152} y2={158} stroke={JT} strokeWidth={2.5} strokeLinecap="round" />
+          <line x1={63} y1={158} x2={63} y2={172} stroke={JT} strokeWidth={2} strokeLinecap="round" />
+          <line x1={137} y1={158} x2={137} y2={172} stroke={JT} strokeWidth={2} strokeLinecap="round" />
+          {/* central column */}
+          <line x1={100} y1={181} x2={100} y2={210} stroke={JT} strokeWidth={3} strokeLinecap="round" />
+          {/* star base + casters */}
+          {[-28, -14, 0, 14, 28].map((dx) => (
+            <g key={dx}>
+              <line
+                x1={100} y1={210} x2={100 + dx} y2={216 + Math.abs(dx) * 0.08}
+                stroke={JT} strokeWidth={2.2} strokeLinecap="round"
+              />
+              <circle cx={100 + dx} cy={217 + Math.abs(dx) * 0.08} r={2} fill={JT} />
+            </g>
+          ))}
         </g>
       )}
 
@@ -272,32 +290,31 @@ export function FigureRig({ poses, seated }: Props) {
         {/* Pelvis anchor */}
         <g transform="translate(100, 178)">
 
-          {/* Hip line */}
-          <line
-            x1={-12} y1={0} x2={12} y2={0}
-            stroke={BONE} strokeWidth={3} strokeLinecap="round"
-          />
-
           <Leg side={-1} hipRef={hipLRef} kneeRef={kneeLRef} ankleRef={ankleLRef} />
           <Leg side={1}  hipRef={hipRRef} kneeRef={kneeRRef} ankleRef={ankleRRef} />
 
-          {/* Torso — rotates whole upper body around pelvis */}
-          <g ref={torsoRef}>
-            <line y2={-TORSO} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
-
-            <g transform={`translate(0,${-TORSO})`}>
-              <line x1={-22} y1={0} x2={22} y2={0} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
-
-              {/* Neck + head — single joint drives the whole neck/head sub-chain */}
-              <g ref={headRef}>
-                <line y2={-NECK} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
-                <g transform={`translate(0,${-NECK})`}>
-                  <circle cy={-HEAD_R} r={HEAD_R} fill="none" stroke={HEAD} strokeWidth={2.5} />
-                </g>
-              </g>
-
+          {/* Torso — rotates the whole upper body around the pelvis. No drawn
+              spine bone: arms hang from the neck point and their own bend
+              implies the torso silhouette. */}
+          <g ref={torsoRef} transform={rot(REST.torso)}>
+            <g transform={`translate(0,${-72})`}>
               <Arm side={-1} shoulderRef={shoulderLRef} elbowRef={elbowLRef} wristRef={wristLRef} />
               <Arm side={1}  shoulderRef={shoulderRRef} elbowRef={elbowRRef} wristRef={wristRRef} />
+
+              {/* Neck + head with face — single joint drives the sub-chain */}
+              <g ref={headRef} transform={rot(REST.head)}>
+                <line y2={-NECK} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
+                <circle r={3} fill={JT} />
+                <g transform={`translate(0,${-NECK})`}>
+                  <circle cy={-HEAD_R} r={HEAD_R} fill="none" stroke={BONE} strokeWidth={3} />
+                  <circle cx={-6} cy={-HEAD_R - 3} r={1.6} fill={BONE} />
+                  <circle cx={6}  cy={-HEAD_R - 3} r={1.6} fill={BONE} />
+                  <path
+                    d={`M -5,${-HEAD_R + 6} Q 0,${-HEAD_R + 10} 5,${-HEAD_R + 6}`}
+                    fill="none" stroke={BONE} strokeWidth={1.6} strokeLinecap="round"
+                  />
+                </g>
+              </g>
             </g>
           </g>
 
