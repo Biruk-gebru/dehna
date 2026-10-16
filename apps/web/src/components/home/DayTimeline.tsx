@@ -39,13 +39,27 @@ function MomentRow({ m }: { m: Moment }) {
   );
 }
 
+// A dashed path that winds between the moments, which alternate sides.
+// Each moment is one row of fixed height; its figure sits at 25% or 75% across.
+function windingPath(n: number) {
+  const x = (i: number) => (i % 2 ? 75 : 25);
+  let d = `M ${x(0)} 50`;
+  for (let i = 1; i < n; i++) d += ` C ${x(i - 1)} ${i * 100}, ${x(i)} ${i * 100}, ${x(i)} ${i * 100 + 50}`;
+  return d;
+}
+
 export function DayTimeline() {
   return (
     <section className="home-day">
-      <h2 className="home-h2">A day with Dehna</h2>
-      <ol className="home-moments">
-        {DAY.map((m) => <MomentRow key={m.time} m={m} />)}
-      </ol>
+      <h2 className="home-h2" style={{ textAlign: 'center' }}>A day with Dehna</h2>
+      <div className="home-moments-wrap">
+        <svg className="home-path" viewBox={`0 0 100 ${DAY.length * 100}`} preserveAspectRatio="none" aria-hidden="true">
+          <path d={windingPath(DAY.length)} vectorEffect="non-scaling-stroke" />
+        </svg>
+        <ol className="home-moments">
+          {DAY.map((m) => <MomentRow key={m.time} m={m} />)}
+        </ol>
+      </div>
     </section>
   );
 }
