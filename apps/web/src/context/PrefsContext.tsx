@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { UserPreferences } from '@/types';
+import { StorageRecovery } from '@/components/layout/StorageRecovery';
 
 interface PrefsContextValue {
   prefs: UserPreferences | null;
@@ -14,6 +15,7 @@ const PrefsContext = createContext<PrefsContextValue | null>(null);
 export function PrefsProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
+  const [storageError, setStorageError] = useState<string | null>(null);
 
   useEffect(() => {
     let settled = false;
@@ -51,17 +53,14 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
         setPrefs(existing ?? { ...DEFAULT_PREFERENCES, createdAt: now, updatedAt: now });
         setLoading(false);
       })
-      .catch(async (err) => {
+      .catch((err) => {
         if (settled) return;
-        // If the IDB version upgrade failed (e.g. schema conflict from an old install),
-        // delete and recreate the database so the app stays usable.
-        if (err?.name === 'VersionError' || err?.name === 'InvalidStateError') {
-          try {
-            await import('@/lib/db').then(({ db }) => db.delete());
-          } catch {}
-        }
+        // Never delete the database here. Whatever failed (storage blocked, disk
+        // full, a stuck upgrade), the data itself is usually fine; the recovery
+        // screen lets the person save a copy before choosing anything.
         settled = true;
         clearTimeout(timeout);
+        setStorageError(err?.name ?? 'Error');
         setLoading(false);
       });
 
@@ -83,7 +82,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
 
   return (
     <PrefsContext.Provider value={{ prefs, loading, updatePrefs }}>
-      {children}
+      {storageError ? <StorageRecovery error={storageError} /> : children}
     </PrefsContext.Provider>
   );
 }

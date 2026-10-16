@@ -1,9 +1,33 @@
+import Dexie from 'dexie';
 import { db } from './db';
 
 export async function exportData(): Promise<void> {
-  const preferences = await db.preferences.toArray();
-  const sessions = await db.sessions.toArray();
-  const payload = { preferences, sessions, exportedAt: new Date().toISOString() };
+  download({ preferences: await db.preferences.toArray(), sessions: await db.sessions.toArray() });
+}
+
+/**
+ * Exports straight from whatever database is on disk, without the app's schema.
+ * Opening Dexie with no declared version works even when the normal open fails
+ * (e.g. a newer app version left a higher schema), so data can always be rescued.
+ * The file has the same shape as a normal backup, so Import backup accepts it.
+ */
+export async function exportRawData(): Promise<void> {
+  const raw = new Dexie('dehna');
+  await raw.open();
+  const has = (name: string) => raw.tables.some((t) => t.name === name);
+  download({
+    preferences: has('preferences') ? await raw.table('preferences').toArray() : [],
+    sessions: has('sessions') ? await raw.table('sessions').toArray() : [],
+  });
+  raw.close();
+}
+
+export async function deleteDatabase(): Promise<void> {
+  await Dexie.delete('dehna');
+}
+
+function download(data: { preferences: unknown[]; sessions: unknown[] }): void {
+  const payload = { ...data, exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
