@@ -4,8 +4,8 @@
   "description": "Desk worker wellness breaks, tailored to how you feel.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#edebe6",
-  "theme_color": "#d3643b",
+  "background_color": "#f4f1ea",
+  "theme_color": "#2f5d50",
   "orientation": "portrait-primary",
   "categories": ["health", "productivity"],
   "icons": [

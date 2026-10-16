@@ -11,6 +11,7 @@ import { clearAllData, exportData, importData } from '@/lib/storage';
 import type { ProblemArea, Theme } from '@/types';
 
 const THEMES: { id: Theme; label: string; bg: string; accent: string }[] = [
+  { id: 'forest-clay',      label: 'Forest', bg: '#f4f1ea', accent: '#b94a33' },
   { id: 'earth-terracotta', label: 'Earth',  bg: '#edebe6', accent: '#d3643b' },
   { id: 'sage-coral',       label: 'Sage',   bg: '#f8f6f2', accent: '#e84a5f' },
   { id: 'warm-clay',        label: 'Clay',   bg: '#f5efe7', accent: '#a39081' },

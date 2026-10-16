@@ -32,6 +32,6 @@ export const DEFAULT_PREFERENCES: Omit<UserPreferences, 'createdAt' | 'updatedAt
   hasStandingDesk: false,
   soundEnabled: false,
   notificationsEnabled: true,
-  theme: 'earth-terracotta',
+  theme: 'forest-clay',
   onboardingCompleted: false,
 };

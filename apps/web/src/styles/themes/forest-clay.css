@@ -1,0 +1,17 @@
+[data-theme="forest-clay"] {
+  --color-bg: #f4f1ea;
+  --color-surface: #ffffff;
+  --color-surface-hover: #eeeadf;
+  --color-text: #1f2a24;
+  --color-text-muted: #5e6b63;
+  --color-primary: #b94a33; /* clay, deepened from #c8553d so white button text passes 4.5:1 */
+  --color-primary-hover: #9e3d29;
+  --color-accent: #2f5d50;
+  --color-border: #e4ded2;
+  --color-success: #2f5d50;
+  --color-warning: #dce6dd;
+  --color-error: #b94a33;
+  --color-timer-ring: #2f5d50;
+  --color-timer-bg: #ddd8cc;
+  --color-break-bg: #dce6dd;
+}
