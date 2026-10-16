@@ -236,6 +236,16 @@ textarea {
 
 /* ── Home ── */
 
+.home-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .home-link {
   color: var(--color-text-muted);
   transition: color 0.15s;
@@ -254,44 +264,113 @@ textarea {
   color: var(--color-primary-hover);
 }
 
+.home-h1 {
+  font-size: clamp(2.5rem, 7vw, 4.4rem);
+  font-weight: var(--font-weight-light);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.home-h1 em {
+  font-style: normal;
+  color: var(--color-primary);
+}
+
+.home-h2 {
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  font-weight: var(--font-weight-light);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
 .home-hero {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-7);
+  gap: var(--space-6);
   align-items: center;
-  max-width: 1080px;
+  max-width: 1120px;
   width: 100%;
   margin: 0 auto;
-  padding: var(--space-6) 24px 0;
+  padding: var(--space-6) 24px var(--space-8);
 }
 
-@media (min-width: 860px) {
+@media (min-width: 880px) {
   .home-hero {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.05fr 1fr;
     padding-top: var(--space-8);
+    min-height: 78vh;
   }
 }
 
-.home-demo {
+/* The avatar's stage: a soft floor of colour with the speech bubble above it */
+.home-stage {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  border-radius: 20px;
+  align-items: center;
+  padding: var(--space-8) var(--space-5) var(--space-5);
+  border-radius: 28px;
   background-color: var(--color-break-bg);
 }
 
-.home-demo-stage {
+.home-stage-figure {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 240px;
+  height: 300px;
   animation: home-fade 0.5s ease-out;
+}
+
+.home-stage-figure svg {
+  width: min(300px, 78vw);
+  height: auto;
+}
+
+.home-bubble {
+  position: absolute;
+  top: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 82%;
+  padding: 12px 18px;
+  border-radius: 18px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  line-height: 1.35;
+  box-shadow: 0 6px 20px rgba(40, 30, 20, 0.08);
+  animation: home-pop 0.45s ease-out;
+}
+
+.home-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background-color: var(--color-surface);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 3px;
+}
+
+.home-stage-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--space-4);
 }
 
 @keyframes home-fade {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes home-pop {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 .home-demo-dot {
@@ -310,17 +389,111 @@ textarea {
   opacity: 1;
 }
 
-.home-desk {
+/* Where does it hurt? */
+.home-hurts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  align-items: center;
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-8) 24px;
+}
+
+@media (min-width: 880px) {
+  .home-hurts { grid-template-columns: 1fr 1fr; }
+}
+
+.home-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-5);
+}
+
+.home-areas button {
+  border: none;
+  background: none;
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  text-decoration: underline 2px transparent;
+  text-underline-offset: 6px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.home-areas button:hover {
+  color: var(--color-text);
+}
+
+.home-areas button[aria-selected='true'] {
+  color: var(--color-text);
+  text-decoration-color: var(--color-primary);
+}
+
+.home-hurts-figure {
+  display: flex;
+  justify-content: center;
+  animation: home-fade 0.4s ease-out;
+}
+
+/* A day with Dehna */
+.home-day {
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-8) 24px;
+}
+
+.home-moments {
+  list-style: none;
+  margin-top: var(--space-6);
+  border-left: 2px solid var(--color-border);
+}
+
+.home-moment {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) 0 var(--space-4) var(--space-5);
+  opacity: 0.35;
+  transition: opacity 0.5s;
+}
+
+.home-moment[data-visible='true'] {
+  opacity: 1;
+}
+
+.home-moment-figure {
+  flex-shrink: 0;
+  width: 150px;
+  display: flex;
+  justify-content: center;
+}
+
+.home-moment-figure svg {
+  width: 150px;
+  height: auto;
+}
+
+@media (max-width: 560px) {
+  .home-moment { flex-direction: column; align-items: flex-start; }
+}
+
+/* Closing */
+.home-close {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-6);
-  max-width: 1080px;
+  max-width: 1120px;
   width: 100%;
   margin: 0 auto;
-  padding: var(--space-6) 24px var(--space-8);
+  padding: var(--space-8) 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-demo-stage { animation: none; }
+  .home-stage-figure, .home-bubble, .home-hurts-figure { animation: none; }
+  .home-moment { opacity: 1; transition: none; }
 }
