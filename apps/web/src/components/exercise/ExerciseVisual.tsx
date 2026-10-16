@@ -353,8 +353,56 @@ const GLUTE_SQUEEZE: Clip = {
   ],
 };
 
-const STILL_SEATED: Clip = { seated: true, yaw: 25, poses: [] };
-const EYES_CLOSED: Clip = { seated: true, yaw: 25, poses: [{ target: CALM, durationMs: 1 }] };
+// ── Mental exercises: eyes closed, brows drawn together in concentration ─────
+
+const THINKING = { lids: 1, pinch: 0.45, brow: -0.15, smile: 0.05, gy: 0 };
+const think = (face: Partial<typeof THINKING> & { open?: number }, rest: PoseTarget = {}): PoseTarget =>
+  merge({ face: { ...THINKING, ...face } }, rest);
+
+// Box breathing at its own rhythm: in, hold, out, hold, four seconds each.
+const BOX_BREATHING: Clip = {
+  seated: true, yaw: 25,
+  poses: [
+    { target: think({}, { torso: { flex: -3 }, head: { nod: -2 }, ...both({ sy: 2.5, sz: -1.5 }) }), durationMs: 4000 },
+    { target: think({ pinch: 0.55 }, { torso: { flex: -3 }, head: { nod: -2 }, ...both({ sy: 2.5, sz: -1.5 }) }), durationMs: 4000 },
+    { target: think({ open: 0.4, pinch: 0.35 }, { head: { nod: 3 } }), durationMs: 4000 },
+    { target: think({ pinch: 0.5 }, { head: { nod: 4 } }), durationMs: 4000 },
+  ],
+};
+
+const BODY_SCAN: Clip = {
+  seated: true, yaw: 25,
+  poses: [
+    { target: think({}, { head: { nod: 3 } }), durationMs: 3200 },
+    { target: think({ pinch: 0.6, brow: -0.25 }, { head: { nod: 6, tilt: 3 } }), durationMs: 2800 },
+    { target: think({ pinch: 0.4 }, { head: { nod: 4, tilt: -2 } }), durationMs: 3000 },
+  ],
+};
+
+const BREATH_COUNTING: Clip = {
+  seated: true, yaw: 25,
+  poses: [
+    { target: think({}, { torso: { flex: -2 }, ...both({ sy: 1.5 }) }), durationMs: 2600 },
+    { target: think({ open: 0.35, pinch: 0.35 }, { head: { nod: 3 } }), durationMs: 3200 },
+  ],
+};
+
+// 5-4-3-2-1 asks you to look around, then to listen and feel with eyes closed.
+const GROUNDING: Clip = {
+  seated: true, yaw: 25,
+  poses: [
+    { target: { face: { pinch: 0.3, brow: -0.1, gx: 0.8, lids: 0.15 }, head: { turn: 25 } }, durationMs: 2600 },
+    { target: { face: { pinch: 0.3, brow: -0.1, gx: -0.8, lids: 0.15 }, head: { turn: -25 } }, durationMs: 2600 },
+    { target: think({ pinch: 0.5 }, { head: { tilt: 8, nod: 2 } }), durationMs: 3200 },
+  ],
+};
+
+const MENTAL: Record<string, Clip> = {
+  'cognitive-box-breathing-01': BOX_BREATHING,
+  'cognitive-body-scan-01': BODY_SCAN,
+  'cognitive-grounding-01': GROUNDING,
+  'cognitive-breath-counting-01': BREATH_COUNTING,
+};
 
 const CLIPS: Record<string, Clip> = {
   'neck-side-tilt-01': NECK_SIDE_TILT,
@@ -391,8 +439,7 @@ const CLIPS: Record<string, Clip> = {
 };
 
 export function getClip(exercise: Exercise): Clip {
-  // Grounding asks you to look around, the rest are done with eyes closed
-  if (exercise.type === 'cognitive') return exercise.id === 'cognitive-grounding-01' ? STILL_SEATED : EYES_CLOSED;
+  if (exercise.type === 'cognitive') return MENTAL[exercise.id] ?? BODY_SCAN;
   return CLIPS[exercise.id] ?? BREATHE;
 }
 
@@ -477,7 +524,7 @@ export function ExerciseVisual({ exercise }: Props) {
       {exercise.type === 'eye-break' ? (
         <EyeVisual id={exercise.id} />
       ) : (
-        <FigureRig clip={getClip(exercise)} static={exercise.type === 'cognitive'} />
+        <FigureRig clip={getClip(exercise)} />
       )}
     </div>
   );
