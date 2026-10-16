@@ -55,7 +55,7 @@ export type Pose = {
 };
 
 export type Prop =
-  | { kind: 'desk'; z: number }
+  | { kind: 'desk'; z: number; height?: number; monitor?: boolean }
   | { kind: 'ledge'; z: number }
   | { kind: 'wall'; z: number }
   | { kind: 'chair-front'; z: number } // a chair in front, facing away so its backrest is nearest
@@ -307,12 +307,19 @@ function chairPrims(proj: Projector, cam: Camera, z: number): Prim[] {
 function propPrims(proj: Projector, cam: Camera, prop: Prop): Prim[] {
   switch (prop.kind) {
     case 'desk': {
+      const top = prop.height ?? 74;
       const z0 = prop.z, z1 = prop.z + 42;
       const legs: V[] = [[-42, 0, z0 + 3], [42, 0, z0 + 3], [-42, 0, z1 - 3], [42, 0, z1 - 3]];
-      return [
-        ...legs.map((p) => line(proj, [p, [p[0], 70, p[2]]], 3.5, PROP_LINE)),
-        ...box(proj, cam, [-46, 70, z0], [46, 74, z1]),
+      const prims = [
+        ...legs.map((p) => line(proj, [p, [p[0], top - 4, p[2]]], 3.5, PROP_LINE)),
+        ...box(proj, cam, [-46, top - 4, z0], [46, top, z1]),
       ];
+      if (prop.monitor) {
+        const mz = z0 + 30;
+        prims.push(line(proj, [[0, top, mz + 2], [0, top + 12, mz + 2]], 3.5, PROP_LINE));
+        prims.push(...box(proj, cam, [-20, top + 10, mz - 1], [20, top + 36, mz + 2]));
+      }
+      return prims;
     }
     case 'ledge':
       return box(proj, cam, [-18, 0, prop.z], [18, 46, prop.z + 30]);

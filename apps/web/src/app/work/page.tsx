@@ -12,6 +12,7 @@ import { TimerRing } from '@/components/timer/TimerRing';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { PostureToggle } from '@/components/timer/PostureToggle';
+import { DeskAvatar } from '@/components/timer/DeskAvatar';
 import { PostureSuggestionCard } from '@/components/timer/PostureSuggestionCard';
 import { suggestPosture } from '@/lib/posture';
 import { RoutinePlayer } from '@/components/exercise/RoutinePlayer';
@@ -241,11 +242,13 @@ export default function WorkPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 'var(--space-7)',
-        padding: 'var(--space-6)',
+        gap: 'var(--space-5)',
+        padding: 'var(--space-6) var(--space-6) var(--space-9)',
       }}
     >
-      <TimerRing progress={timer.progress} size={240}>
+      <DeskAvatar posture={hasDesk ? posture : 'sitting'} working={mode === 'running'} />
+
+      <TimerRing progress={timer.progress} size={200}>
         <TimerDisplay formattedTime={timer.formattedRemaining} label={timerLabel} />
       </TimerRing>
 
