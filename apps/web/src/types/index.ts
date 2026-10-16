@@ -8,7 +8,7 @@ export type ProblemArea =
   | 'legs'
   | 'general';
 
-export type Theme = 'forest-clay' | 'sage-coral' | 'earth-terracotta' | 'warm-clay' | 'studio';
+export type Theme = 'sand-teal' | 'forest-clay' | 'sage-coral' | 'earth-terracotta' | 'warm-clay' | 'studio';
 
 export interface UserPreferences {
   id: 1;

@@ -1,0 +1,18 @@
+/* From palette #0006 on colors.robi.work: e8ddcb cdb380 036564 033649 031634 */
+[data-theme="sand-teal"] {
+  --color-bg: #f2ece2;
+  --color-surface: #fbf9f6;
+  --color-surface-hover: #e6e1d9;
+  --color-text: #031634;
+  --color-text-muted: #616976;
+  --color-primary: #036564;
+  --color-primary-hover: #035655;
+  --color-accent: #cdb380;
+  --color-border: #dad7d1;
+  --color-success: #033649; /* used as text, so the deep teal rather than the gold */
+  --color-warning: #dfceb1;
+  --color-error: #a33a2c;
+  --color-timer-ring: #036564;
+  --color-timer-bg: #d5d2cd;
+  --color-break-bg: #dfceb1;
+}

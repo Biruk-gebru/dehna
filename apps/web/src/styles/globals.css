@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./themes/sand-teal.css";
 @import "./themes/forest-clay.css";
 @import "./themes/earth-terracotta.css";
 @import "./themes/sage-coral.css";

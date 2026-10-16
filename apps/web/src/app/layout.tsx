@@ -37,12 +37,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-theme="forest-clay"
+      data-theme="sand-teal"
       suppressHydrationWarning
       className={`${bricolage.variable} ${jetbrainsMono.variable} h-full`}
     >
       <head>
-        <meta name="theme-color" content="#2f5d50" />
+        <meta name="theme-color" content="#036564" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="min-h-full flex flex-col">
