@@ -608,11 +608,13 @@ function render(f: Flat, clip: Clip, blink: number): Prim[] {
 
 interface Props {
   clip: Clip;
-  /** Show the first pose (or rest) with no motion at all, e.g. for cognitive exercises. */
+  /** Show the first pose (or rest) with no motion at all, e.g. a paused desk scene. */
   static?: boolean;
+  /** Rendered width in px; height follows the frame's aspect ratio. */
+  size?: number;
 }
 
-export function FigureRig({ clip, static: isStatic }: Props) {
+export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
   const rest = clip.seated ? SEATED : STANDING;
   const [prims, setPrims] = useState<Prim[]>(() =>
     render(targetFlat(rest, clip.poses[0]?.target ?? {}), clip, 0),
@@ -698,7 +700,7 @@ export function FigureRig({ clip, static: isStatic }: Props) {
   }, [clip, isStatic]);
 
   return (
-    <svg viewBox={(clip.view ?? [-100, -192, 200, 210]).join(' ')} width="200" height="210" aria-hidden="true" style={{ overflow: clip.view ? 'hidden' : 'visible' }}>
+    <svg viewBox={(clip.view ?? [-100, -192, 200, 210]).join(' ')} width={size} height={size * 1.05} aria-hidden="true" style={{ overflow: clip.view ? 'hidden' : 'visible' }}>
       {prims.map((p, i) => {
         switch (p.k) {
           case 'line':
