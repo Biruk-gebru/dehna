@@ -234,6 +234,7 @@ const SKIN = '#d9a07c';
 const SKIN_SHADE = '#c18663';
 const PALM = '#efc6a6';
 const MOUTH = '#8a4a3a';
+const CHEEK = 'rgba(226, 112, 92, 0.28)';
 const HAIR = '#2f231c';
 const SHIRT = 'var(--color-primary, #d3643b)';
 const PANTS = '#3e4756';
@@ -398,8 +399,31 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
     const n = norm(sub(p, faceC));
     return proj(add(faceC, n)).z - proj(faceC).z;
   };
-  const at = (local: V) => proj(add(Hc, apply(Rh, local))).at;
-  const onFace = faceD + 0.5;
+  const headPt = (local: V) => add(Hc, apply(Rh, local));
+  const at = (local: V) => proj(headPt(local)).at;
+  // Features use their true depth (never below the face disc) so hair tufts and
+  // hands sort against them correctly from any angle.
+  const depthOf = (local: V) => Math.max(faceD + 0.5, proj(headPt(local)).z);
+
+  // Ears sit just behind the face disc, so they peek out head-on and turn into
+  // view in profile. The nose matches the face, so it only shows in profile.
+  for (const s of [1, -1]) {
+    const ear = circle(proj, headPt([s * 11.2, 0.2, 0]), 2.7, SKIN);
+    prims.push(ear);
+    // The inner ear only shows once the ear turns toward the camera
+    if (proj(headPt([s * 13, 0.2, 0])).z - ear.d > 1) {
+      prims.push({ ...circle(proj, headPt([s * 11.6, 0.2, 0.3]), 1.2, SKIN_SHADE), d: ear.d + 0.01 });
+    }
+  }
+  prims.push(circle(proj, headPt([0, -1.4, 11.8]), 1.9, SKIN));
+
+  // Side-swept haircut: overlapping tufts along the hairline give a soft,
+  // uneven outline instead of a helmet.
+  const tufts: [V, number][] = [
+    [[-4.5, 10.4, 5], 4.2], [[0.5, 11.4, 4.6], 4.4], [[5, 10.6, 3.8], 4],
+    [[8.8, 8, 2], 3],
+  ];
+  for (const [local, r] of tufts) prims.push(circle(proj, headPt(local), r, HAIR));
   const brow = g('face.brow'), pinch = g('face.pinch'), smile = g('face.smile');
   const closed = Math.max(blink, g('face.lids'));
 
@@ -409,26 +433,29 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
     if (facing(eye) <= 0.2) continue;
     if (closed > 0.75) {
       // Closed lids curve down slightly, like a relaxed sleeping eye
-      prims.push({ k: 'curve', from: at([s * 4.2 - 1.6, 0.6, 10.2]), ctrl: at([s * 4.2, -0.4, 10.4]), to: at([s * 4.2 + 1.6, 0.6, 10.2]), w: 1.1, c: HAIR, d: onFace });
+      prims.push({ k: 'curve', from: at([s * 4.2 - 1.6, 0.6, 10.2]), ctrl: at([s * 4.2, -0.4, 10.4]), to: at([s * 4.2 + 1.6, 0.6, 10.2]), w: 1.1, c: HAIR, d: depthOf(eye) });
     } else {
-      prims.push({ k: 'ellipse', at: at(eye), rx: 1.5, ry: Math.max(0.3, 1.6 * (1 - closed)), c: HAIR, d: onFace });
+      prims.push({ k: 'ellipse', at: at(eye), rx: 1.5, ry: Math.max(0.3, 1.6 * (1 - closed)), c: HAIR, d: depthOf(eye) });
+    }
+    if (facing([s * 6.4, -2.6, 9.2]) > 0.3) {
+      prims.push({ k: 'ellipse', at: at([s * 6.4, -2.6, 9.2]), rx: 2.3, ry: 1.4, c: CHEEK, d: depthOf([s * 6.4, -2.6, 9.2]) - 0.1 });
     }
     // Brows: height carries mood, the inner end dropping reads as effort
     const inner: V = [s * 2.1, 4.1 + brow * 1.2 - pinch * 1.1, 10.1];
     const outer: V = [s * 6.3, 3.8 + brow * 1.4 + pinch * 0.5, 9.1];
     const mid: V = [s * 4.2, 4.6 + brow * 1.4, 10];
-    prims.push({ k: 'curve', from: at(inner), ctrl: at(mid), to: at(outer), w: 1.3, c: HAIR, d: onFace });
+    prims.push({ k: 'curve', from: at(inner), ctrl: at(mid), to: at(outer), w: 1.3, c: HAIR, d: depthOf(mid) });
   }
 
   if (facing([0, -4.6, 10.6]) > 0.35) {
     const open = g('face.open');
     const width = 1.9 + Math.max(0, smile) * 0.7 - open * 0.6;
     if (open > 0.15) {
-      prims.push({ k: 'ellipse', at: at([0, -5, 10.4]), rx: width * 0.75, ry: 0.5 + open * 1.4, c: MOUTH, d: onFace });
+      prims.push({ k: 'ellipse', at: at([0, -5, 10.4]), rx: width * 0.75, ry: 0.5 + open * 1.4, c: MOUTH, d: depthOf([0, -5, 10.4]) });
     } else {
       // Corners lift with a smile and press down a little with effort
       const corner = -4.8 + smile * 0.6;
-      prims.push({ k: 'curve', from: at([-width, corner, 10.3]), ctrl: at([0, -4.8 - smile * 1.8, 10.6]), to: at([width, corner, 10.3]), w: 1.3, c: SKIN_SHADE, d: onFace });
+      prims.push({ k: 'curve', from: at([-width, corner, 10.3]), ctrl: at([0, -4.8 - smile * 1.8, 10.6]), to: at([width, corner, 10.3]), w: 1.3, c: SKIN_SHADE, d: depthOf([0, -4.8, 10.6]) });
     }
   }
 
