@@ -14,6 +14,7 @@ export function selectRoutine(
   prefs: UserPreferences,
   recentIds: string[],
   hoursWorked: number,
+  fits: (e: Exercise) => boolean = () => true, // can it be done in the user's current posture?
 ): Exercise[] {
   const recent = new Set(recentIds);
   let available = catalog.filter(
@@ -40,12 +41,12 @@ export function selectRoutine(
   const pinned = [cognitive, eyeBreak].filter(Boolean) as Exercise[];
   const pinnedIds = new Set(pinned.map((e) => e.id));
 
-  // Weight remaining by problem area match
+  // Weight remaining by problem area match, then by posture fit
   const fillPool: Exercise[] = [];
   for (const ex of available) {
     if (pinnedIds.has(ex.id)) continue;
     const matches = ex.targetAreas.some((a) => prefs.problemAreas.includes(a));
-    const weight = matches ? 3 : 1;
+    const weight = (matches ? 3 : 1) * (fits(ex) ? 3 : 1);
     for (let i = 0; i < weight; i++) fillPool.push(ex);
   }
 

@@ -81,12 +81,12 @@ export default function WorkPage() {
     const hoursWorked = workStartRef.current
       ? (Date.now() - workStartRef.current) / 3_600_000
       : 0.5;
-    const newRoutine = generateRoutine(hoursWorked);
+    const newRoutine = generateRoutine(hoursWorked, hasDesk ? posture : 'sitting');
     setRoutine(newRoutine);
     setMode('break');
     if (prefs?.soundEnabled) playChime();
     if (prefs?.notificationsEnabled) notify('Time for a break!', { body: 'A short movement break is ready.' });
-  }, [generateRoutine, prefs?.soundEnabled]);
+  }, [generateRoutine, prefs?.soundEnabled, hasDesk, posture]);
 
   const timer = useTimer(
     prefs?.workIntervalMinutes ?? 25,
