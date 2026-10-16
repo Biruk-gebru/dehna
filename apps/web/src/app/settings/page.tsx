@@ -73,7 +73,7 @@ export default function SettingsPage() {
       await importData(file);
       window.location.reload();
     } catch {
-      alert('Could not import — make sure this is a valid Dehna backup file.');
+      alert("Couldn't import that file. Make sure it's a Dehna backup.");
     }
   };
 
