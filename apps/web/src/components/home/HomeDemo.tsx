@@ -20,9 +20,37 @@ const SCENES: Scene[] = [
   { says: 'Better. Back to work, standing this time.', ms: 5200, standing: true },
 ];
 
+// What it says when you tap it
+const REACTIONS = [
+  'Oh, hi!',
+  "Careful, I'm mid-stretch.",
+  'Your shoulders could use this too.',
+  'Thanks for checking on me.',
+  'Same time in half an hour?',
+];
+
+// A window and a plant so the avatar isn't floating in an empty box
+function Room() {
+  return (
+    <svg className="home-room" viewBox="0 0 400 320" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+      <rect x="34" y="70" width="104" height="128" rx="6" style={{ fill: 'var(--color-surface)' }} opacity="0.75" />
+      <rect x="44" y="80" width="40" height="52" rx="2" style={{ fill: 'var(--color-bg)' }} />
+      <rect x="88" y="80" width="40" height="52" rx="2" style={{ fill: 'var(--color-bg)' }} />
+      <rect x="44" y="136" width="40" height="52" rx="2" style={{ fill: 'var(--color-bg)' }} />
+      <rect x="88" y="136" width="40" height="52" rx="2" style={{ fill: 'var(--color-bg)' }} />
+      <path d="M338 252 q-26 -40 -6 -86 q10 34 6 86" style={{ fill: 'var(--color-primary)' }} opacity="0.35" />
+      <path d="M342 252 q30 -34 18 -80 q-18 30 -18 80" style={{ fill: 'var(--color-primary)' }} opacity="0.45" />
+      <path d="M340 252 q-4 -50 -30 -70 q2 40 30 70" style={{ fill: 'var(--color-primary)' }} opacity="0.3" />
+      <path d="M318 250 h44 l-6 40 h-32 z" style={{ fill: 'var(--color-accent)' }} opacity="0.8" />
+    </svg>
+  );
+}
+
 export function HomeDemo() {
   const [index, setIndex] = useState(0);
+  const [poke, setPoke] = useState<{ scene: number; n: number } | null>(null);
   const scene = SCENES[index];
+  const reaction = poke?.scene === index ? REACTIONS[poke.n % REACTIONS.length] : null;
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -32,12 +60,20 @@ export function HomeDemo() {
 
   return (
     <figure className="home-stage">
-      <p key={`say-${index}`} className="home-bubble" aria-live="polite">{scene.says}</p>
-      <div key={index} className="home-stage-figure">
+      <Room />
+      <p key={`say-${index}-${poke?.n}`} className="home-bubble" aria-live="polite">{reaction ?? scene.says}</p>
+      {/* Tapping restarts the scene, which replays the avatar's glance and smile */}
+      <button
+        key={`${index}-${poke?.n}`}
+        type="button"
+        className="home-stage-figure"
+        aria-label="Say hi"
+        onClick={() => setPoke((p) => ({ scene: index, n: (p?.n ?? -1) + 1 }))}
+      >
         {scene.exercise
           ? <ExerciseVisual exercise={scene.exercise} />
           : <DeskAvatar posture={scene.standing ? 'standing' : 'sitting'} working />}
-      </div>
+      </button>
       <div className="home-stage-dots">
         {SCENES.map((s, i) => (
           <button
