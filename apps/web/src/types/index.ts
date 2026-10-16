@@ -16,6 +16,7 @@ export interface UserPreferences {
   workIntervalMinutes: number;
   breakDurationMinutes: number;
   exerciseDifficulty: 'gentle' | 'moderate';
+  hasStandingDesk: boolean;
   soundEnabled: boolean;
   notificationsEnabled: boolean;
   theme: Theme;

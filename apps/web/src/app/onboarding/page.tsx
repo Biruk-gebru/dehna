@@ -20,8 +20,8 @@ export default function OnboardingPage() {
     return <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }} aria-hidden="true" />;
   }
 
-  const handleComplete = async ({ problemAreas, workIntervalMinutes, exerciseDifficulty }: OnboardingData) => {
-    await updatePrefs({ problemAreas, workIntervalMinutes, exerciseDifficulty, onboardingCompleted: true });
+  const handleComplete = async (data: OnboardingData) => {
+    await updatePrefs({ ...data, onboardingCompleted: true });
     router.replace('/work');
   };
 

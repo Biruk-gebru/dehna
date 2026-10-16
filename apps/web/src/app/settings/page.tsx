@@ -145,6 +145,20 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Desk */}
+        <section style={sectionStyle}>
+          <h2 style={sectionHeadingStyle}>Desk</h2>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', maxWidth: 400 }}>
+            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)' }}>I have a sit/stand desk</span>
+            <input
+              type="checkbox"
+              checked={prefs.hasStandingDesk ?? false}
+              onChange={(e) => save({ hasStandingDesk: e.target.checked })}
+              style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+            />
+          </label>
+        </section>
+
         {/* Theme */}
         <section style={sectionStyle}>
           <h2 style={sectionHeadingStyle}>Theme</h2>

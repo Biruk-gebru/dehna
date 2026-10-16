@@ -29,6 +29,7 @@ export const DEFAULT_PREFERENCES: Omit<UserPreferences, 'createdAt' | 'updatedAt
   workIntervalMinutes: 25,
   breakDurationMinutes: 5,
   exerciseDifficulty: 'gentle',
+  hasStandingDesk: false,
   soundEnabled: false,
   notificationsEnabled: true,
   theme: 'earth-terracotta',

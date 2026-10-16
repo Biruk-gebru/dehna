@@ -10,19 +10,21 @@ export interface OnboardingData {
   problemAreas: ProblemArea[];
   workIntervalMinutes: number;
   exerciseDifficulty: 'gentle' | 'moderate';
+  hasStandingDesk: boolean;
 }
 
 interface OnboardingFlowProps {
   onComplete: (data: OnboardingData) => Promise<void>;
 }
 
-type Step = 'welcome' | 'areas' | 'interval' | 'difficulty';
+type Step = 'welcome' | 'areas' | 'interval' | 'desk' | 'difficulty';
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState<Step>('welcome');
   const [areas, setAreas]         = useState<ProblemArea[]>(['general']);
   const [interval, setInterval]   = useState(25);
   const [difficulty, setDifficulty] = useState<'gentle' | 'moderate'>('gentle');
+  const [standingDesk, setStandingDesk] = useState(false);
   const [saving, setSaving]       = useState(false);
 
   const save = async () => {
@@ -31,6 +33,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       problemAreas: areas.length > 0 ? areas : ['general'],
       workIntervalMinutes: interval,
       exerciseDifficulty: difficulty,
+      hasStandingDesk: standingDesk,
     });
   };
 
@@ -97,6 +100,42 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </p>
         </div>
         <IntervalSelector value={interval} onChange={setInterval} />
+        <Button onClick={() => setStep('desk')} style={{ minWidth: 180 }}>
+          Continue →
+        </Button>
+      </main>
+    );
+  }
+
+  if (step === 'desk') {
+    return (
+      <main style={sharedLayout}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)' }}>
+            Can your desk go up and down?
+          </h2>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
+            If it can, we&apos;ll suggest when to stand and when to sit.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-4)', width: '100%', maxWidth: 340 }}>
+          {([true, false] as const).map((has) => (
+            <button
+              key={String(has)}
+              type="button"
+              className={`area-card${standingDesk === has ? ' selected' : ''}`}
+              onClick={() => setStandingDesk(has)}
+              style={{ flex: 1 }}
+            >
+              <span style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-medium)' }}>
+                {has ? 'Yes' : 'No'}
+              </span>
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
+                {has ? 'I have a sit/stand desk' : 'I sit to work'}
+              </p>
+            </button>
+          ))}
+        </div>
         <Button onClick={() => setStep('difficulty')} style={{ minWidth: 180 }}>
           Continue →
         </Button>
