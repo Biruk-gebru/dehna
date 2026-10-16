@@ -39,10 +39,19 @@ type LegParams = {
   out: number;   // knee direction: 0 forward, + rotates the knee outward
 };
 
+type FaceParams = {
+  brow: number;  // + raised (warm, surprised), - lowered (focused)
+  pinch: number; // 0..1 inner brow ends drawn down: effort, concentration
+  smile: number; // -1 pressed lips .. 0 neutral .. 1 smile
+  open: number;  // 0..1 mouth opening, e.g. a slow exhale
+  lids: number;  // 0 open .. 1 closed
+};
+
 type BodyParams = {
   pelvis: { x: number; y: number; z: number };
   torso: { hinge: number; flex: number; side: number; twist: number };
   head: { nod: number; tilt: number; turn: number; z: number };
+  face: FaceParams;
   armL: ArmParams; armR: ArmParams;
   legL: LegParams; legR: LegParams;
 };
@@ -110,6 +119,7 @@ const STANDING: BodyParams = {
   pelvis: { x: 0, y: 0, z: 0 },
   torso: { hinge: 0, flex: 0, side: 0, twist: 0 },
   head: { nod: 0, tilt: 0, turn: 0, z: 0 },
+  face: { brow: 0, pinch: 0, smile: 0.3, open: 0, lids: 0.1 },
   armL: ARM_REST, armR: ARM_REST,
   legL: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
   legR: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
@@ -143,6 +153,7 @@ function smoothTimeFor(key: string): number {
   if (key.startsWith('pelvis')) return 0.5;
   if (key.startsWith('torso')) return 0.55;
   if (key.startsWith('head')) return 0.5;
+  if (key.startsWith('face')) return 0.35;
   if (key.startsWith('leg')) return 0.48;
   if (/\.(he|ha|hf|pron|grip)$/.test(key)) return 0.55;
   return 0.46;
@@ -219,6 +230,7 @@ const SHIN = 40;
 const SKIN = '#d9a07c';
 const SKIN_SHADE = '#c18663';
 const PALM = '#efc6a6';
+const MOUTH = '#8a4a3a';
 const HAIR = '#2f231c';
 const SHIRT = 'var(--color-primary, #d3643b)';
 const PANTS = '#3e4756';
@@ -238,7 +250,8 @@ type Prim =
   | { k: 'line'; pts: P2[]; w: number; c: string; d: number }
   | { k: 'circle'; at: P2; r: number; c: string; d: number }
   | { k: 'ellipse'; at: P2; rx: number; ry: number; c: string; d: number }
-  | { k: 'poly'; pts: P2[]; c: string; d: number };
+  | { k: 'poly'; pts: P2[]; c: string; d: number }
+  | { k: 'curve'; from: P2; ctrl: P2; to: P2; w: number; c: string; d: number };
 
 type Camera = { yaw: number; shift: number };
 
@@ -382,16 +395,37 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
     const n = norm(sub(p, faceC));
     return proj(add(faceC, n)).z - proj(faceC).z;
   };
+  const at = (local: V) => proj(add(Hc, apply(Rh, local))).at;
+  const onFace = faceD + 0.5;
+  const brow = g('face.brow'), pinch = g('face.pinch'), smile = g('face.smile');
+  const closed = Math.max(blink, g('face.lids'));
+
   for (const s of [1, -1]) {
-    const local: V = [s * 4.2, 0.6, 10.3];
-    if (facing(local) > 0.2) {
-      const p = proj(add(Hc, apply(Rh, local)));
-      prims.push({ k: 'ellipse', at: p.at, rx: 1.5, ry: Math.max(0.25, 1.6 * (1 - blink)), c: HAIR, d: faceD + 0.5 });
+    const eye: V = [s * 4.2, 0.6, 10.3];
+    if (facing(eye) <= 0.2) continue;
+    if (closed > 0.75) {
+      // Closed lids curve down slightly, like a relaxed sleeping eye
+      prims.push({ k: 'curve', from: at([eye[0] - 1.6, 0.6, 10.2]), ctrl: at([eye[0], -0.4, 10.4]), to: at([eye[0] + 1.6, 0.6, 10.2]), w: 1.1, c: HAIR, d: onFace });
+    } else {
+      prims.push({ k: 'ellipse', at: at(eye), rx: 1.5, ry: Math.max(0.3, 1.6 * (1 - closed)), c: HAIR, d: onFace });
     }
+    // Brows: height carries mood, the inner end dropping reads as effort
+    const inner: V = [s * 2.1, 4.1 + brow * 1.2 - pinch * 1.1, 10.1];
+    const outer: V = [s * 6.3, 3.8 + brow * 1.4 + pinch * 0.5, 9.1];
+    const mid: V = [s * 4.2, 4.6 + brow * 1.4, 10];
+    prims.push({ k: 'curve', from: at(inner), ctrl: at(mid), to: at(outer), w: 1.3, c: HAIR, d: onFace });
   }
+
   if (facing([0, -4.6, 10.6]) > 0.35) {
-    const mouth = line(proj, [add(Hc, apply(Rh, [-1.8, -4.8, 10.4])), add(Hc, apply(Rh, [1.8, -4.8, 10.4]))], 1.3, SKIN_SHADE);
-    prims.push({ ...mouth, d: faceD + 0.5 });
+    const open = g('face.open');
+    const width = 1.9 + Math.max(0, smile) * 0.7 - open * 0.6;
+    if (open > 0.15) {
+      prims.push({ k: 'ellipse', at: at([0, -5, 10.4]), rx: width * 0.75, ry: 0.5 + open * 1.4, c: MOUTH, d: onFace });
+    } else {
+      // Corners lift with a smile and press down a little with effort
+      const corner = -4.8 + smile * 0.6;
+      prims.push({ k: 'curve', from: at([-width, corner, 10.3]), ctrl: at([0, -4.8 - smile * 1.8, 10.6]), to: at([width, corner, 10.3]), w: 1.3, c: SKIN_SHADE, d: onFace });
+    }
   }
 
   // Arms
@@ -541,6 +575,16 @@ export function FigureRig({ clip, static: isStatic }: Props) {
         f[`${leg}.y`] += Math.min(8, speed * 0.15);
       }
 
+      // Open each clip with a quick glance and smile at the viewer
+      const sinceStart = now - t0;
+      if (sinceStart < 1800) {
+        const w = Math.sin((sinceStart / 1800) * Math.PI);
+        const toCamera = Math.max(-55, Math.min(55, -(clip.yaw ?? 0) - f['torso.twist']));
+        f['head.turn'] += (toCamera - f['head.turn']) * w * 0.8;
+        f['face.smile'] += (0.9 - f['face.smile']) * w;
+        f['face.brow'] += (0.5 - f['face.brow']) * w;
+      }
+
       const phase = (now % 4300) / 4300;
       const blink = phase < 0.04 ? Math.sin((phase / 0.04) * Math.PI) : 0;
 
@@ -571,6 +615,16 @@ export function FigureRig({ clip, static: isStatic }: Props) {
             return <circle key={i} cx={p.at[0]} cy={p.at[1]} r={p.r} style={{ fill: p.c }} />;
           case 'ellipse':
             return <ellipse key={i} cx={p.at[0]} cy={p.at[1]} rx={p.rx} ry={p.ry} style={{ fill: p.c }} />;
+          case 'curve':
+            return (
+              <path
+                key={i}
+                d={`M${p.from[0].toFixed(2)},${p.from[1].toFixed(2)} Q${p.ctrl[0].toFixed(2)},${p.ctrl[1].toFixed(2)} ${p.to[0].toFixed(2)},${p.to[1].toFixed(2)}`}
+                style={{ fill: 'none', stroke: p.c }}
+                strokeWidth={p.w}
+                strokeLinecap="round"
+              />
+            );
           case 'poly':
             return (
               <polygon

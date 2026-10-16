@@ -14,21 +14,27 @@ interface Props {
 
 const both = (arm: PoseTarget['armL']): PoseTarget => ({ armL: arm, armR: arm });
 
+// Faces: a light effort while holding a stretch, relief when letting go.
+const EFFORT: PoseTarget = { face: { brow: -0.3, pinch: 0.5, smile: -0.15, lids: 0.35 } };
+const RELIEF: PoseTarget = { face: { brow: 0.15, smile: 0.55 } };
+const CALM: PoseTarget = { face: { lids: 1, smile: 0.25, brow: 0.1 } };
+
 /** One side, back to base, the other side, back to base. */
 function alternate(side: PoseTarget, holdMs: number, betweenMs: number, base: PoseTarget = {}): Pose[] {
+  const release = merge(base, RELIEF);
   return [
-    { target: merge(base, side), durationMs: holdMs },
-    { target: base, durationMs: betweenMs },
-    { target: merge(base, mirror(side)), durationMs: holdMs },
-    { target: base, durationMs: betweenMs },
+    { target: merge(base, EFFORT, side), durationMs: holdMs },
+    { target: release, durationMs: betweenMs },
+    { target: merge(base, EFFORT, mirror(side)), durationMs: holdMs },
+    { target: release, durationMs: betweenMs },
   ];
 }
 
 const BREATHE: Clip = {
   seated: true, yaw: 25,
   poses: [
-    { target: { torso: { flex: -3 }, head: { nod: -3 }, ...both({ sy: 2, sz: -1.5 }) }, durationMs: 3000 },
-    { target: {}, durationMs: 3000 },
+    { target: { torso: { flex: -3 }, head: { nod: -3 }, ...both({ sy: 2, sz: -1.5 }), face: { lids: 0.6, smile: 0.2 } }, durationMs: 3000 },
+    { target: { face: { lids: 0.8, open: 0.45, smile: 0 } }, durationMs: 3000 }, // slow exhale
   ],
 };
 
@@ -47,8 +53,8 @@ const NECK_ROTATION: Clip = {
 const NECK_CHIN_TUCK: Clip = {
   seated: true, yaw: 78,
   poses: [
-    { target: { head: { z: -4.5, nod: 6 } }, durationMs: 1800 },
-    { target: { head: { z: 1.5 } }, durationMs: 1300 },
+    { target: merge(EFFORT, { head: { z: -4.5, nod: 6 } }), durationMs: 1800 },
+    { target: merge(RELIEF, { head: { z: 1.5 } }), durationMs: 1300 },
   ],
 };
 
@@ -89,8 +95,8 @@ const SQUEEZE_BASE = both({ e: 42, a: 88, r: 0.71, pe: 15, pa: -90 });
 const SCAPULAR_SQUEEZE: Clip = {
   seated: true, yaw: 55,
   poses: [
-    { target: merge(SQUEEZE_BASE, both({ sz: -5, e: 38, a: 62 }), { torso: { flex: -4 } }), durationMs: 1900 },
-    { target: SQUEEZE_BASE, durationMs: 1300 },
+    { target: merge(SQUEEZE_BASE, EFFORT, both({ sz: -5, e: 38, a: 62 }), { torso: { flex: -4 } }), durationMs: 1900 },
+    { target: merge(SQUEEZE_BASE, RELIEF), durationMs: 1300 },
   ],
 };
 
@@ -110,10 +116,10 @@ const ARMS_UP = both({ e: 162, a: 122, r: 0.98, pe: 90, pa: 0, grip: 0.9 });
 const OVERHEAD_REACH: Clip = {
   yaw: 0,
   poses: [
-    { target: merge(ARMS_UP, { torso: { side: -13 }, head: { tilt: -4 } }), durationMs: 2200 },
-    { target: ARMS_UP, durationMs: 800 },
-    { target: merge(ARMS_UP, { torso: { side: 13 }, head: { tilt: 4 } }), durationMs: 2200 },
-    { target: ARMS_UP, durationMs: 800 },
+    { target: merge(ARMS_UP, EFFORT, { torso: { side: -13 }, head: { tilt: -4 } }), durationMs: 2200 },
+    { target: merge(ARMS_UP, RELIEF), durationMs: 800 },
+    { target: merge(ARMS_UP, EFFORT, { torso: { side: 13 }, head: { tilt: 4 } }), durationMs: 2200 },
+    { target: merge(ARMS_UP, RELIEF), durationMs: 800 },
   ],
 };
 
@@ -134,8 +140,8 @@ const DOORFRAME: Clip = {
 const CAT_COW: Clip = {
   seated: true, yaw: 75,
   poses: [
-    { target: { torso: { flex: -14 }, head: { nod: -14 }, ...both({ sz: -3, e: 36, a: 82, r: 0.86 }) }, durationMs: 2300 },
-    { target: { torso: { flex: 24 }, head: { nod: 24 }, ...both({ sz: 3, e: 22, a: 70, r: 0.9 }) }, durationMs: 2300 },
+    { target: { torso: { flex: -14 }, head: { nod: -14 }, ...both({ sz: -3, e: 36, a: 82, r: 0.86 }), face: { brow: 0.35, smile: 0.5, lids: 0.2 } }, durationMs: 2300 },
+    { target: { torso: { flex: 24 }, head: { nod: 24 }, ...both({ sz: 3, e: 22, a: 70, r: 0.9 }), face: { lids: 0.85, open: 0.3, smile: 0 } }, durationMs: 2300 },
   ],
 };
 
@@ -144,9 +150,9 @@ const THORACIC_ROTATION: Clip = {
   seated: true, yaw: 10,
   poses: [
     { target: ARMS_CROSSED, durationMs: 700 },
-    { target: merge(ARMS_CROSSED, { torso: { twist: -42 }, head: { turn: -14 } }), durationMs: 1900 },
-    { target: ARMS_CROSSED, durationMs: 700 },
-    { target: merge(ARMS_CROSSED, { torso: { twist: 42 }, head: { turn: 14 } }), durationMs: 1900 },
+    { target: merge(ARMS_CROSSED, EFFORT, { torso: { twist: -42 }, head: { turn: -14 } }), durationMs: 1900 },
+    { target: merge(ARMS_CROSSED, RELIEF), durationMs: 700 },
+    { target: merge(ARMS_CROSSED, EFFORT, { torso: { twist: 42 }, head: { turn: 14 } }), durationMs: 1900 },
   ],
 };
 
@@ -175,16 +181,16 @@ const HANDS_LOW_BACK = both({ e: 23, a: -122, r: 0.7, pe: 80, pa: -50, hf: 0.7, 
 const BACK_EXTENSION: Clip = {
   yaw: 75,
   poses: [
-    { target: merge(HANDS_LOW_BACK, { torso: { flex: -20, hinge: -6 }, head: { nod: -16 }, pelvis: { z: 3 } }), durationMs: 2200 },
-    { target: HANDS_LOW_BACK, durationMs: 1500 },
+    { target: merge(HANDS_LOW_BACK, EFFORT, { torso: { flex: -20, hinge: -6 }, head: { nod: -16 }, pelvis: { z: 3 } }), durationMs: 2200 },
+    { target: merge(HANDS_LOW_BACK, RELIEF), durationMs: 1500 },
   ],
 };
 
 const CHEST_OPENER: Clip = {
   yaw: 70,
   poses: [
-    { target: merge(both({ e: 48, a: -110, r: 0.98, sz: -3 }), { torso: { flex: -6 }, head: { nod: -5 } }), durationMs: 2600 },
-    { target: both({ e: 24, a: -124, r: 0.98 }), durationMs: 1500 },
+    { target: merge(both({ e: 48, a: -110, r: 0.98, sz: -3 }), { torso: { flex: -6 }, head: { nod: -5 }, face: { lids: 0.5, smile: 0.45, brow: 0.2 } }), durationMs: 2600 },
+    { target: merge(both({ e: 24, a: -124, r: 0.98 }), RELIEF), durationMs: 1500 },
   ],
 };
 
@@ -192,7 +198,7 @@ const CHEST_OPENER: Clip = {
 const FORWARD_FOLD: Clip = {
   yaw: 80, shift: -42, props: [{ kind: 'desk', z: 84 }],
   poses: [
-    { target: merge(both({ e: 162, a: 90, r: 0.97, pe: 90, pa: 0, grip: 0.6 }), { torso: { hinge: 88 }, head: { nod: 20 } }), durationMs: 4200 },
+    { target: merge(both({ e: 162, a: 90, r: 0.97, pe: 90, pa: 0, grip: 0.6 }), { torso: { hinge: 88 }, head: { nod: 20 } }, CALM), durationMs: 4200 },
     { target: merge(both({ e: 137, a: 90, r: 0.97, pe: 90, pa: 0, grip: 0.6 }), { torso: { hinge: 75 }, head: { nod: 8 } }), durationMs: 1800 },
   ],
 };
@@ -289,14 +295,14 @@ const HANDS_ON_CHAIR = both({ e: 25, a: 99, r: 0.79, pe: 70, pa: -90, grip: 0.9 
 const CALF_RAISES: Clip = {
   yaw: 75, props: [{ kind: 'chair-front', z: 36 }],
   poses: [
-    { target: merge(HANDS_ON_CHAIR, { pelvis: { y: 7 }, legL: { y: 13, pitch: 38 }, legR: { y: 13, pitch: 38 } }), durationMs: 1200 },
+    { target: merge(HANDS_ON_CHAIR, { pelvis: { y: 7 }, legL: { y: 13, pitch: 38 }, legR: { y: 13, pitch: 38 }, face: { brow: 0.4, smile: 0.4 } }), durationMs: 1200 },
     { target: HANDS_ON_CHAIR, durationMs: 1000 },
   ],
 };
 
 // Hands on hips; the pelvis traces a circle while the feet stay planted.
 const HANDS_ON_HIPS = both({ e: 3, a: 90, r: 0.74, pe: 90, pa: -15, hf: 0.5, he: 0, ha: 180, grip: 0.6 });
-const hips = (x: number, z: number) => merge(HANDS_ON_HIPS, {
+const hips = (x: number, z: number) => merge(HANDS_ON_HIPS, { face: { smile: 0.7, brow: 0.2 } }, {
   pelvis: { x, z },
   torso: { side: -x * 0.9, flex: -z * 0.7 },
   legL: { x: 13 }, legR: { x: 13 },
@@ -339,12 +345,13 @@ const CALF_STRETCH: Clip = {
 const GLUTE_SQUEEZE: Clip = {
   seated: true, yaw: 35,
   poses: [
-    { target: { pelvis: { y: 1.5 }, torso: { flex: -3 }, head: { nod: -2 } }, durationMs: 1800 },
-    { target: {}, durationMs: 1300 },
+    { target: { pelvis: { y: 1.5 }, torso: { flex: -3 }, head: { nod: -2 }, face: { pinch: 0.7, brow: -0.2, smile: -0.5, lids: 0.4 } }, durationMs: 1800 },
+    { target: RELIEF, durationMs: 1300 },
   ],
 };
 
 const STILL_SEATED: Clip = { seated: true, yaw: 25, poses: [] };
+const EYES_CLOSED: Clip = { seated: true, yaw: 25, poses: [{ target: CALM, durationMs: 1 }] };
 
 const CLIPS: Record<string, Clip> = {
   'neck-side-tilt-01': NECK_SIDE_TILT,
@@ -381,7 +388,8 @@ const CLIPS: Record<string, Clip> = {
 };
 
 export function getClip(exercise: Exercise): Clip {
-  if (exercise.type === 'cognitive') return STILL_SEATED;
+  // Grounding asks you to look around, the rest are done with eyes closed
+  if (exercise.type === 'cognitive') return exercise.id === 'cognitive-grounding-01' ? STILL_SEATED : EYES_CLOSED;
   return CLIPS[exercise.id] ?? BREATHE;
 }
 
