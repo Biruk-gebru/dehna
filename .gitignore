@@ -47,3 +47,6 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Vercel CLI link for the monorepo root
+.vercel
