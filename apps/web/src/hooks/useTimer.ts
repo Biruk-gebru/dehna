@@ -42,16 +42,22 @@ export function useTimer(
   useEffect(() => { onCompleteRef.current  = onComplete; }, [onComplete]);
   useEffect(() => { totalSecondsRef.current = totalSeconds; }, [totalSeconds]);
 
+  const visibilityRef = useRef<(() => void) | null>(null);
+
   const clearTick = useCallback(() => {
     if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (visibilityRef.current) {
+      document.removeEventListener('visibilitychange', visibilityRef.current);
+      visibilityRef.current = null;
+    }
   }, []);
 
   const startTick = useCallback(() => {
     clearTick();
-    intervalRef.current = setInterval(() => {
+    const check = () => {
       if (startTimeRef.current === null) return;
       const runSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const total = accumulatedRef.current + runSeconds;
@@ -65,7 +71,12 @@ export function useTimer(
       } else {
         setElapsedSeconds(total);
       }
-    }, 500);
+    };
+    intervalRef.current = setInterval(check, 500);
+    // Background tabs throttle the interval (Chrome: about once a minute after
+    // five minutes hidden). Checking on return makes a missed finish fire at once.
+    visibilityRef.current = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', visibilityRef.current);
   }, [clearTick]);
 
   // On mount, resume if restored in running state.
