@@ -6,12 +6,14 @@ import { usePreferences } from '@/hooks/usePreferences';
 import { useTimer, type TimerRestore, type TimerState } from '@/hooks/useTimer';
 import { useExercises } from '@/hooks/useExercises';
 import { useSessionHistory } from '@/hooks/useSessionHistory';
+import { usePosture } from '@/hooks/usePosture';
 import { notify, playChime, requestNotificationPermission } from '@/lib/notifications';
 import { TimerRing } from '@/components/timer/TimerRing';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { TimerControls } from '@/components/timer/TimerControls';
+import { PostureToggle } from '@/components/timer/PostureToggle';
 import { RoutinePlayer } from '@/components/exercise/RoutinePlayer';
-import type { Exercise } from '@/types';
+import type { Exercise, Posture } from '@/types';
 
 type AppMode = 'idle' | 'running' | 'paused' | 'break';
 
@@ -59,7 +61,9 @@ export default function WorkPage() {
   // Always-current snapshot used by the unmount cleanup to avoid stale closures
   const liveRef = useRef<{ timerState: TimerState; elapsed: number; appMode: AppMode } | null>(null);
 
-  const { startSession, recordBreak, endSession } = useSessionHistory();
+  const { startSession, recordBreak, recordPosture, endSession } = useSessionHistory();
+  const { posture, setPosture } = usePosture();
+  const hasDesk = prefs?.hasStandingDesk ?? false;
   const { generateRoutine } = useExercises(prefs);
 
   const handleWorkComplete = useCallback(() => {
@@ -126,10 +130,17 @@ export default function WorkPage() {
     await requestNotificationPermission();
     const id = await startSession();
     setSessionId(id);
+    if (hasDesk) await recordPosture(id, posture);
     workStartRef.current = Date.now();
     timer.start();
     setMode('running');
-  }, [startSession, timer]);
+  }, [startSession, timer, hasDesk, recordPosture, posture]);
+
+  const handlePosture = useCallback((next: Posture) => {
+    if (next === posture) return;
+    setPosture(next);
+    if (sessionId !== null) recordPosture(sessionId, next);
+  }, [posture, setPosture, sessionId, recordPosture]);
 
   const handlePause = useCallback(() => {
     timer.pause();
@@ -218,6 +229,8 @@ export default function WorkPage() {
       <TimerRing progress={timer.progress} size={240}>
         <TimerDisplay formattedTime={timer.formattedRemaining} label={timerLabel} />
       </TimerRing>
+
+      {hasDesk && <PostureToggle posture={posture} onChange={handlePosture} />}
 
       <TimerControls
         mode={mode}

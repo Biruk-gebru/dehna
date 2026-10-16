@@ -211,6 +211,34 @@ textarea {
 
 /* ── Problem area picker cards ── */
 
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-timer-bg);
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 6px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--color-text);
+}
+
+.segmented button[aria-pressed='true'] {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
 .area-card {
   padding: var(--space-4);
   border-radius: var(--radius-lg);

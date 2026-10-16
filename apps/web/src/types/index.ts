@@ -32,12 +32,20 @@ export interface BreakRecord {
   completed: boolean;
 }
 
+export type Posture = 'sitting' | 'standing';
+
+export interface PostureChange {
+  posture: Posture;
+  at: string;
+}
+
 export interface WorkSession {
   id?: number;
   startedAt: string;
   endedAt: string | null;
   durationMinutes: number;
   breaks: BreakRecord[];
+  postures?: PostureChange[]; // only recorded when the user has a sit/stand desk
   status: 'active' | 'completed' | 'abandoned';
 }
 

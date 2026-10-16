@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { db } from '@/lib/db';
-import type { BreakRecord } from '@/types';
+import type { BreakRecord, Posture } from '@/types';
 
 export function useSessionHistory() {
   const startSession = useCallback(async (): Promise<number> => {
@@ -22,6 +22,13 @@ export function useSessionHistory() {
     await db.sessions.update(sessionId, { breaks: [...session.breaks, record] });
   }, []);
 
+  const recordPosture = useCallback(async (sessionId: number, posture: Posture) => {
+    const session = await db.sessions.get(sessionId);
+    if (!session) return;
+    const change = { posture, at: new Date().toISOString() };
+    await db.sessions.update(sessionId, { postures: [...(session.postures ?? []), change] });
+  }, []);
+
   const endSession = useCallback(async (sessionId: number) => {
     const session = await db.sessions.get(sessionId);
     if (!session) return;
@@ -35,5 +42,5 @@ export function useSessionHistory() {
     });
   }, []);
 
-  return { startSession, recordBreak, endSession };
+  return { startSession, recordBreak, recordPosture, endSession };
 }
