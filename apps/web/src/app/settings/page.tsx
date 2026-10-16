@@ -1,13 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
 import { ProblemAreaPicker } from '@/components/onboarding/ProblemAreaPicker';
 import { IntervalSelector } from '@/components/onboarding/IntervalSelector';
 import { Button } from '@/components/ui/Button';
-import { clearAllData, exportData, importData } from '@/lib/storage';
+import { clearAllData, exportData, importData, isStoragePersistent, requestPersistentStorage } from '@/lib/storage';
 import type { ProblemArea, Theme } from '@/types';
 
 const THEMES: { id: Theme; label: string; bg: string; accent: string }[] = [
@@ -46,6 +46,8 @@ export default function SettingsPage() {
   const { prefs, loading, updatePrefs } = usePreferences();
   const router = useRouter();
   const [saved, setSaved] = useState(false);
+  const [persistent, setPersistent] = useState<boolean | null>(null);
+  useEffect(() => { isStoragePersistent().then(setPersistent).catch(() => setPersistent(false)); }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (loading || !prefs) {
@@ -213,6 +215,25 @@ export default function SettingsPage() {
         {/* Data */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <h2 style={sectionHeadingStyle}>Data</h2>
+          {persistent !== null && (
+            <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', lineHeight: 'var(--line-height-relaxed)', maxWidth: 420 }}>
+              {persistent ? (
+                <p>Your history is stored permanently on this device. Clearing &ldquo;cookies and site data&rdquo; in your browser still erases it, so export a backup now and then.</p>
+              ) : (
+                <>
+                  <p>Your browser may clear this data on its own when space runs low, or after a week away in Safari. Export a backup to keep it safe.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    style={{ marginTop: 'var(--space-3)' }}
+                    onClick={() => requestPersistentStorage().then(setPersistent).catch(() => {})}
+                  >
+                    Keep my data on this device
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             <Button variant="outline" size="sm" onClick={exportData}>Export backup</Button>
             <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>Import backup</Button>

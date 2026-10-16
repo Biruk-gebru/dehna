@@ -8,6 +8,7 @@ import { useExercises } from '@/hooks/useExercises';
 import { useSessionHistory } from '@/hooks/useSessionHistory';
 import { usePosture } from '@/hooks/usePosture';
 import { notify, playChime, requestNotificationPermission } from '@/lib/notifications';
+import { requestPersistentStorage } from '@/lib/storage';
 import { TimerRing } from '@/components/timer/TimerRing';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { TimerControls } from '@/components/timer/TimerControls';
@@ -139,6 +140,7 @@ export default function WorkPage() {
 
   const handleStart = useCallback(async () => {
     await requestNotificationPermission();
+    requestPersistentStorage().catch(() => {}); // keep history safe from automatic cleanup
     const id = await startSession();
     setSessionId(id);
     if (hasDesk) await recordPosture(id, posture);
