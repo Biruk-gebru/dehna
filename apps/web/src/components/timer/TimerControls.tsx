@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/Button';
-import type { TimerState } from '@/hooks/useTimer';
 
 interface TimerControlsProps {
   mode: 'idle' | 'running' | 'paused';

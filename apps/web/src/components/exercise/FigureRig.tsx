@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 //
@@ -632,25 +632,40 @@ interface Props {
   size?: number;
 }
 
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+const watchReducedMotion = (onChange: () => void) => {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+
+function useReducedMotion() {
+  return useSyncExternalStore(watchReducedMotion, () => window.matchMedia(REDUCED_MOTION).matches, () => false);
+}
+
 export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
-  const [prims, setPrims] = useState<Prim[]>(() => render(targetFlat(clip, clip.poses[0]?.target ?? {}), clip, 0));
+  const reduced = useReducedMotion();
+  const total = clip.poses.reduce((s, p) => s + p.durationMs, 0);
+  // A still frame instead of animation: when asked to be static, when there is no
+  // motion, or with reduced motion, where it holds the longest pose (the main hold).
+  const stillPose = isStatic || total <= 0
+    ? 0
+    : reduced
+      ? clip.poses.reduce((best, p, i) => (p.durationMs > clip.poses[best].durationMs ? i : best), 0)
+      : null;
+  const still = useMemo(
+    () => (stillPose === null ? null : render(targetFlat(clip, clip.poses[stillPose]?.target ?? {}), clip, 0)),
+    [clip, stillPose],
+  );
+
+  const [animated, setAnimated] = useState<Prim[]>(() => render(targetFlat(clip, clip.poses[0]?.target ?? {}), clip, 0));
   // Springs outlive a clip change, so the figure moves from where it is into the
   // new clip (standing up, or flowing into the next exercise) instead of snapping.
   const springs = useRef<Record<string, { pos: number; vel: number }> | null>(null);
 
   useEffect(() => {
+    if (stillPose !== null) return;
     const targets = clip.poses.map((p) => targetFlat(clip, p.target));
-    const total = clip.poses.reduce((s, p) => s + p.durationMs, 0);
-    if (isStatic || total <= 0) {
-      setPrims(render(targets[0] ?? targetFlat(clip, {}), clip, 0));
-      return;
-    }
-    // Reduced motion: hold still on the longest pose, which is the clip's main hold
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const longest = clip.poses.reduce((best, p, i) => (p.durationMs > clip.poses[best].durationMs ? i : best), 0);
-      setPrims(render(targets[longest], clip, 0));
-      return;
-    }
 
     const state = springs.current ?? {};
     for (const [k, v] of Object.entries(targetFlat(clip, {}))) state[k] ??= { pos: v, vel: 0 };
@@ -715,13 +730,15 @@ export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
       const lidPulse = (x: number) => (x >= 0 && x < 170 ? Math.sin((x / 170) * Math.PI) : 0);
       const blink = lidPulse(now - blinkAt) + (doubleBlink ? lidPulse(now - blinkAt - 280) : 0);
 
-      setPrims(render(f, clip, blink));
+      setAnimated(render(f, clip, blink));
       rafId = requestAnimationFrame(frame);
     }
 
     rafId = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafId);
-  }, [clip, isStatic]);
+  }, [clip, stillPose, total]);
+
+  const prims = still ?? animated;
 
   return (
     <svg viewBox={(clip.view ?? [-100, -192, 200, 210]).join(' ')} width={size} height={size * 1.05} aria-hidden="true" style={{ overflow: clip.view ? 'hidden' : 'visible' }}>

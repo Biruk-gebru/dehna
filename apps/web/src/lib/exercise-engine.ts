@@ -51,7 +51,7 @@ export function selectRoutine(
   }
 
   const targetSeconds = prefs.breakDurationMinutes * 60;
-  let filled = [...pinned];
+  const filled = [...pinned];
   let totalDur = filled.reduce((s, e) => s + e.duration, 0);
   const seen = new Set(pinnedIds);
 

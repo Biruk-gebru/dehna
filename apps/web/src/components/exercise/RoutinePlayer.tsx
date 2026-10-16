@@ -21,7 +21,6 @@ export function RoutinePlayer({ routine, onComplete, onSkip }: RoutinePlayerProp
 
   useEffect(() => {
     if (!exercise) return;
-    setSecondsLeft(exercise.duration);
     const startTime = Date.now();
     const total = exercise.duration;
 
@@ -44,7 +43,8 @@ export function RoutinePlayer({ routine, onComplete, onSkip }: RoutinePlayerProp
     if (index + 1 >= routine.length) {
       onComplete(routine.map((e) => e.id));
     } else {
-      setIndex((i) => i + 1);
+      setSecondsLeft(routine[index + 1].duration);
+      setIndex(index + 1);
     }
   }
 

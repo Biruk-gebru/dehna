@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useTimer, type TimerRestore, type TimerState } from '@/hooks/useTimer';
@@ -86,14 +86,15 @@ export default function WorkPage() {
   const { pickRoutine, markShown } = useExercises(prefs);
   const breakPosture = hasDesk ? posture : 'sitting';
 
-  // The coming break is picked when a focus block starts, so the screen can preview it
-  const [upcoming, setUpcoming] = useState<Exercise[] | null>(null);
-  const upcomingRef = useRef<Exercise[] | null>(null);
-  upcomingRef.current = upcoming;
+  // The coming break is picked when a focus block starts (and re-picked if the
+  // posture changes), so the screen can preview it
   const inBlock = mode === 'running' || mode === 'paused';
-  useEffect(() => {
-    setUpcoming(inBlock ? pickRoutine((prefs?.workIntervalMinutes ?? 25) / 60, breakPosture) : null);
-  }, [inBlock, breakPosture, pickRoutine, prefs?.workIntervalMinutes]);
+  const upcoming = useMemo(
+    () => (inBlock ? pickRoutine((prefs?.workIntervalMinutes ?? 25) / 60, breakPosture) : null),
+    [inBlock, breakPosture, pickRoutine, prefs?.workIntervalMinutes],
+  );
+  const upcomingRef = useRef<Exercise[] | null>(null);
+  useEffect(() => { upcomingRef.current = upcoming; }, [upcoming]);
 
   const handleWorkComplete = useCallback(() => {
     try { sessionStorage.removeItem(SAVE_KEY); } catch {}
@@ -106,7 +107,7 @@ export default function WorkPage() {
     setMode('break');
     if (prefs?.soundEnabled) playChime();
     if (prefs?.notificationsEnabled) notify('Time for a break!', { body: 'A short movement break is ready.' });
-  }, [pickRoutine, markShown, prefs?.soundEnabled, breakPosture]);
+  }, [pickRoutine, markShown, prefs?.soundEnabled, prefs?.notificationsEnabled, breakPosture]);
 
   const timer = useTimer(
     prefs?.workIntervalMinutes ?? 25,
@@ -114,8 +115,10 @@ export default function WorkPage() {
     saved?.restore,
   );
 
-  // Keep liveRef current every render so the unmount cleanup has fresh values
-  liveRef.current = { timerState: timer.state, elapsed: timer.elapsedSeconds, appMode: mode };
+  // Keep liveRef current after every render so the unmount cleanup has fresh values
+  useEffect(() => {
+    liveRef.current = { timerState: timer.state, elapsed: timer.elapsedSeconds, appMode: mode };
+  });
 
   // Persist on state transitions
   useEffect(() => {
@@ -211,7 +214,7 @@ export default function WorkPage() {
   );
 
   const handleBreakSkip = useCallback(
-    async (completedIds: string[]) => {
+    async () => {
       if (sessionId !== null) {
         await recordBreak(sessionId, {
           startedAt: new Date().toISOString(),
