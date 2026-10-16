@@ -397,6 +397,71 @@ const GROUNDING: Clip = {
   ],
 };
 
+// ── Eyes: a close-up on the head and shoulders so the eyes can be read ────────
+
+const CLOSE_UP: Clip['view'] = [-40, -140, 80, 84];
+function eyeClip(poses: Pose[]): Clip;
+function eyeClip(yaw: number, poses: Pose[]): Clip;
+function eyeClip(a: number | Pose[], b?: Pose[]): Clip {
+  return typeof a === 'number'
+    ? { seated: true, yaw: a, view: CLOSE_UP, poses: b! }
+    : { seated: true, yaw: 12, view: CLOSE_UP, poses: a };
+}
+
+const LOOK_FAR = eyeClip([
+  { target: { head: { turn: -28, nod: -3 }, face: { gx: -0.7, gy: 0.15, lids: 0.2, smile: 0.2 } }, durationMs: 6000 },
+  { target: { head: { turn: -24, nod: -2 }, face: { gx: -0.6, gy: 0.1, lids: 0.25, smile: 0.25 } }, durationMs: 5000 },
+]);
+
+// Rub the palms warm, then cup them over closed eyes.
+const RUB = { e: 55, r: 0.58, pe: 20, pa: 0, hf: 1, he: 150, ha: 100, pron: 180, grip: 0.5 };
+const PALMING = eyeClip([
+  ...Array.from({ length: 8 }, (_, i) => ({
+    target: { armL: { ...RUB, a: i % 2 ? 120 : 132 }, armR: { ...RUB, a: i % 2 ? 132 : 120 }, face: { smile: 0.4 } },
+    durationMs: 180,
+  })),
+  {
+    target: merge(both({ e: 142, a: 132, r: 0.5, pe: 40, pa: 0, hf: 1, he: 160, ha: 160, pron: -90, grip: 0.5 }), CALM, { head: { nod: 4 } }),
+    durationMs: 6000,
+  },
+]);
+
+// Thumb up close to the face, eyes converge on it, then relax into the distance.
+// Straight in front of the face at eye height. Head-on it would hide the face,
+// so this one is shot from three-quarters.
+const THUMB_UP = { armR: { e: 129, a: 120, r: 0.72, pe: 10, pa: -90, hf: 1, he: 90, ha: 90, pron: 0, grip: 1 } };
+const FOCUS_SHIFT = eyeClip(45, [
+  { target: merge(THUMB_UP, { face: { cross: 0.8, gy: -0.15, pinch: 0.35, brow: -0.1 } }), durationMs: 2600 },
+  { target: merge(THUMB_UP, { face: { cross: 0, gy: 0.1, lids: 0.15, brow: 0.1 } }), durationMs: 2600 },
+]);
+
+const gaze = (deg: number): PoseTarget => ({
+  face: { gx: Math.cos(deg * Math.PI / 180), gy: Math.sin(deg * Math.PI / 180), brow: 0.3, lids: 0 },
+});
+const AROUND = [90, 45, 0, -45, -90, -135, 180, 135];
+const EYE_CIRCLES = eyeClip([
+  ...[...AROUND, ...AROUND].map((d) => ({ target: gaze(d), durationMs: 420 })),
+  ...[...AROUND, ...AROUND].reverse().map((d) => ({ target: gaze(d), durationMs: 420 })),
+]);
+
+const SLOW_BLINKS = eyeClip([
+  ...Array.from({ length: 4 }, () => [
+    { target: { face: { lids: 1, smile: 0.2 } }, durationMs: 650 },
+    { target: { face: { lids: 0.05, brow: 0.15 } }, durationMs: 750 },
+  ]).flat(),
+  { target: { face: { lids: 1, pinch: 0.6, brow: -0.3, smile: -0.3 } }, durationMs: 2000 },
+  { target: { face: { gx: 0.6, brow: 0.2, smile: 0.3 }, head: { turn: 12 } }, durationMs: 1300 },
+  { target: { face: { gx: -0.6, brow: 0.2, smile: 0.3 }, head: { turn: -12 } }, durationMs: 1300 },
+]);
+
+const EYES: Record<string, Clip> = {
+  'eyes-20-20-20-01': LOOK_FAR,
+  'eyes-palming-01': PALMING,
+  'eyes-focus-shift-01': FOCUS_SHIFT,
+  'eyes-circles-01': EYE_CIRCLES,
+  'eyes-blink-01': SLOW_BLINKS,
+};
+
 const MENTAL: Record<string, Clip> = {
   'cognitive-box-breathing-01': BOX_BREATHING,
   'cognitive-body-scan-01': BODY_SCAN,
@@ -440,73 +505,8 @@ const CLIPS: Record<string, Clip> = {
 
 export function getClip(exercise: Exercise): Clip {
   if (exercise.type === 'cognitive') return MENTAL[exercise.id] ?? BODY_SCAN;
+  if (exercise.type === 'eye-break') return EYES[exercise.id] ?? LOOK_FAR;
   return CLIPS[exercise.id] ?? BREATHE;
-}
-
-// ─── Eye visual (unchanged) ───────────────────────────────────────────────────
-
-function EyeVisual({ id }: { id: string }) {
-  const isPalming = id === 'eyes-palming-01';
-  const irisClass =
-    id === 'eyes-20-20-20-01'    ? 'ev-iris-far'    :
-    id === 'eyes-circles-01'     ? 'ev-iris-circle'  :
-    id === 'eyes-focus-shift-01' ? 'ev-iris-focus'   :
-    'ev-iris-far';
-  const showBlink = id === 'eyes-blink-01';
-
-  return (
-    <svg viewBox="0 0 240 130" width="220" height="120" aria-hidden="true" style={{ overflow: 'visible' }}>
-      <defs>
-        <clipPath id="ev-eye-clip">
-          <ellipse cx="120" cy="65" rx="84" ry="45" />
-        </clipPath>
-        <radialGradient id="ev-iris-g" cx="42%" cy="38%" r="58%">
-          <stop offset="0%"   stopColor="#9c6830" />
-          <stop offset="55%"  stopColor="#5c3510" />
-          <stop offset="100%" stopColor="#1f0c04" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="120" cy="65" rx="84" ry="45" fill="white" />
-      <g clipPath="url(#ev-eye-clip)" className={isPalming ? undefined : irisClass}>
-        <circle cx="120" cy="65" r="27" fill="url(#ev-iris-g)" />
-        <circle cx="120" cy="65" r="27" fill="none" stroke="#180900" strokeWidth="1.5" />
-        <circle cx="120" cy="65" r="13" fill="#0e0604" />
-        <circle cx="129" cy="57" r="5"  fill="white" opacity="0.6" />
-        <circle cx="124" cy="73" r="2.5" fill="white" opacity="0.25" />
-      </g>
-      <path d="M36,65 Q120,18 204,65"  fill="none" stroke="#9a7550" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M36,65 Q120,106 204,65" fill="none" stroke="#9a7550" strokeWidth="2"   strokeLinecap="round" />
-      <ellipse cx="120" cy="65" rx="84" ry="45" fill="none" stroke="#c5a880" strokeWidth="2" />
-      {showBlink && (
-        <g clipPath="url(#ev-eye-clip)">
-          <rect x="36" y="20" width="168" height="65" fill="#d4b898" className="ev-lid-blink" />
-        </g>
-      )}
-      {isPalming && (
-        <>
-          <ellipse cx="120" cy="65" rx="84" ry="45" fill="#d4b898" />
-          <ellipse cx="68"  cy="65" rx="46" ry="36" fill="#c4a47c" />
-          <ellipse cx="172" cy="65" rx="46" ry="36" fill="#c4a47c" />
-          <path d="M45,52 Q68,46 90,52"   fill="none" stroke="#b0905e" strokeWidth="1.2" />
-          <path d="M150,52 Q172,46 195,52" fill="none" stroke="#b0905e" strokeWidth="1.2" />
-        </>
-      )}
-      {id === 'eyes-circles-01' && (
-        <g stroke="#9a7550" strokeWidth="1.5" fill="none" opacity="0.4" strokeDasharray="5,3">
-          <path d="M 120,20 A 45,45 0 0,1 165,65" />
-          <path d="M 165,65 A 45,45 0 0,1 120,110" />
-          <path d="M 120,110 A 45,45 0 0,1 75,65" />
-          <path d="M 75,65 A 45,45 0 0,1 120,20" />
-        </g>
-      )}
-      {id === 'eyes-focus-shift-01' && (
-        <>
-          <text x="12"  y="18" fontSize="10" fill="#9a7550" fontFamily="sans-serif">near</text>
-          <text x="196" y="18" fontSize="10" fill="#9a7550" fontFamily="sans-serif" textAnchor="end">far</text>
-        </>
-      )}
-    </svg>
-  );
 }
 
 // ─── Public component ─────────────────────────────────────────────────────────
@@ -521,11 +521,7 @@ export function ExerciseVisual({ exercise }: Props) {
         padding: 'var(--space-2) 0',
       }}
     >
-      {exercise.type === 'eye-break' ? (
-        <EyeVisual id={exercise.id} />
-      ) : (
-        <FigureRig clip={getClip(exercise)} />
-      )}
+      <FigureRig clip={getClip(exercise)} />
     </div>
   );
 }

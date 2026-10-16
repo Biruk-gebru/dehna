@@ -47,6 +47,7 @@ type FaceParams = {
   lids: number;  // 0 open .. 1 closed
   gx: number;    // gaze, -1..1: + toward the figure's left
   gy: number;    // gaze, -1..1: + up
+  cross: number; // 0..1 eyes converge on something close to the face
 };
 
 type BodyParams = {
@@ -78,6 +79,7 @@ export type Clip = {
   yaw?: number;   // camera angle in degrees: 0 front, 90 right side
   props?: Prop[];
   shift?: number; // horizontal framing offset for wide poses
+  view?: [number, number, number, number]; // SVG viewBox override, e.g. a close-up on the face
 };
 
 // ─── Pose authoring helpers ──────────────────────────────────────────────────
@@ -122,7 +124,7 @@ const STANDING: BodyParams = {
   pelvis: { x: 0, y: 0, z: 0 },
   torso: { hinge: 0, flex: 0, side: 0, twist: 0 },
   head: { nod: 0, tilt: 0, turn: 0, z: 0 },
-  face: { brow: 0, pinch: 0, smile: 0.3, open: 0, lids: 0.1, gx: 0, gy: 0 },
+  face: { brow: 0, pinch: 0, smile: 0.3, open: 0, lids: 0.1, gx: 0, gy: 0, cross: 0 },
   armL: ARM_REST, armR: ARM_REST,
   legL: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
   legR: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
@@ -477,7 +479,7 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
 
   const gx = g('face.gx') * 1.3, gy = g('face.gy') * 1.1;
   for (const s of [1, -1]) {
-    const eye: V = [s * 4.2 + gx, 0.6 + gy, 10.3];
+    const eye: V = [s * (4.2 - g('face.cross') * 1.1) + gx, 0.6 + gy, 10.3];
     if (facing(eye) <= 0.2) continue;
     if (closed > 0.75) {
       // Closed lids curve down slightly, like a relaxed sleeping eye
@@ -696,7 +698,7 @@ export function FigureRig({ clip, static: isStatic }: Props) {
   }, [clip, isStatic]);
 
   return (
-    <svg viewBox="-100 -192 200 210" width="200" height="210" aria-hidden="true" style={{ overflow: 'visible' }}>
+    <svg viewBox={(clip.view ?? [-100, -192, 200, 210]).join(' ')} width="200" height="210" aria-hidden="true" style={{ overflow: clip.view ? 'hidden' : 'visible' }}>
       {prims.map((p, i) => {
         switch (p.k) {
           case 'line':
