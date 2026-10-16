@@ -633,6 +633,12 @@ export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
       setPrims(render(targets[0] ?? flatten(restPose), clip, 0));
       return;
     }
+    // Reduced motion: hold still on the longest pose, which is the clip's main hold
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const longest = clip.poses.reduce((best, p, i) => (p.durationMs > clip.poses[best].durationMs ? i : best), 0);
+      setPrims(render(targets[longest], clip, 0));
+      return;
+    }
 
     const state: Record<string, { pos: number; vel: number }> = {};
     for (const [k, v] of Object.entries(flatten(restPose))) state[k] = { pos: v, vel: 0 };
