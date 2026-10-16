@@ -33,5 +33,6 @@ export const DEFAULT_PREFERENCES: Omit<UserPreferences, 'createdAt' | 'updatedAt
   soundEnabled: false,
   notificationsEnabled: true,
   theme: 'sand-teal',
+  themeVersion: 2,
   onboardingCompleted: false,
 };

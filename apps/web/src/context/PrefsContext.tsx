@@ -45,7 +45,13 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
           ),
         );
 
-        const existing = await db.preferences.get(1);
+        let existing = await db.preferences.get(1);
+        // One-time move off the old default themes. Anyone who picks one again later keeps it.
+        if (existing && (existing.themeVersion ?? 1) < 2) {
+          const wasOldDefault = existing.theme === 'earth-terracotta' || existing.theme === 'forest-clay';
+          existing = { ...existing, theme: wasOldDefault ? 'sand-teal' : existing.theme, themeVersion: 2 };
+          await db.preferences.put(existing);
+        }
         if (settled) return;
         settled = true;
         clearTimeout(timeout);

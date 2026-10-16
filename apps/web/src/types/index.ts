@@ -20,6 +20,7 @@ export interface UserPreferences {
   soundEnabled: boolean;
   notificationsEnabled: boolean;
   theme: Theme;
+  themeVersion?: number; // bumped when the default theme changes, so old defaults move once
   onboardingCompleted: boolean;
   createdAt: string;
   updatedAt: string;
