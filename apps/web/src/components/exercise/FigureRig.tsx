@@ -527,7 +527,8 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
 
   // Hands can rest on the body but not sink into it: the chest, head, thighs
   // and shins push a hand target back out to their surface before the arm solves.
-  colliders.push([P, M, 11.5], [M, add(C, apply(R2, [0, -6, 0])), 11.5], [Hc, Hc, 12]);
+  // The head is smaller than its hair outline so a hand can rest on or behind it.
+  colliders.push([P, M, 11.5], [M, add(C, apply(R2, [0, -6, 0])), 11.5], [Hc, Hc, 8.5]);
 
   // Arms
   const chestFwd = apply(R2, [0, 0, 1]);

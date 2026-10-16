@@ -74,7 +74,7 @@ const NECK_LEVATOR_SCAP: Clip = {
   poses: alternate({
     head: { nod: 26, turn: 24, tilt: 8 },
     face: { gx: 0.5, gy: -1 },
-    armR: { e: 150, a: -160, r: 0.58, pe: 115, pa: 30, hf: 0.5, he: 170, ha: 180, pron: -90 },
+    armR: { e: 150, a: 200, r: 0.58, pe: 115, pa: 30, hf: 0.5, he: 170, ha: 180, pron: -90 },
   }, 2400, 1100),
 };
 
