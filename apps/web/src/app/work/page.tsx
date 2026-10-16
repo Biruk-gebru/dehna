@@ -76,19 +76,30 @@ export default function WorkPage() {
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, [hasDesk]);
-  const { generateRoutine } = useExercises(prefs);
+  const { pickRoutine, markShown } = useExercises(prefs);
+  const breakPosture = hasDesk ? posture : 'sitting';
+
+  // The coming break is picked when a focus block starts, so the screen can preview it
+  const [upcoming, setUpcoming] = useState<Exercise[] | null>(null);
+  const upcomingRef = useRef<Exercise[] | null>(null);
+  upcomingRef.current = upcoming;
+  const inBlock = mode === 'running' || mode === 'paused';
+  useEffect(() => {
+    setUpcoming(inBlock ? pickRoutine((prefs?.workIntervalMinutes ?? 25) / 60, breakPosture) : null);
+  }, [inBlock, breakPosture, pickRoutine, prefs?.workIntervalMinutes]);
 
   const handleWorkComplete = useCallback(() => {
     try { sessionStorage.removeItem(SAVE_KEY); } catch {}
     const hoursWorked = workStartRef.current
       ? (Date.now() - workStartRef.current) / 3_600_000
       : 0.5;
-    const newRoutine = generateRoutine(hoursWorked, hasDesk ? posture : 'sitting');
+    const newRoutine = upcomingRef.current ?? pickRoutine(hoursWorked, breakPosture);
+    markShown(newRoutine);
     setRoutine(newRoutine);
     setMode('break');
     if (prefs?.soundEnabled) playChime();
     if (prefs?.notificationsEnabled) notify('Time for a break!', { body: 'A short movement break is ready.' });
-  }, [generateRoutine, prefs?.soundEnabled, hasDesk, posture]);
+  }, [pickRoutine, markShown, prefs?.soundEnabled, breakPosture]);
 
   const timer = useTimer(
     prefs?.workIntervalMinutes ?? 25,
@@ -257,6 +268,13 @@ export default function WorkPage() {
       <TimerRing progress={timer.progress} size={200}>
         <TimerDisplay formattedTime={timer.formattedRemaining} label={timerLabel} />
       </TimerRing>
+
+      {upcoming && upcoming.length > 0 && (
+        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textAlign: 'center', maxWidth: 320 }}>
+          Next break: {upcoming.slice(0, 2).map((e) => e.name).join(', ')}
+          {upcoming.length > 2 && ` and ${upcoming.length - 2} more`}
+        </p>
+      )}
 
       {hasDesk && <PostureToggle posture={posture} onChange={handlePosture} />}
 
