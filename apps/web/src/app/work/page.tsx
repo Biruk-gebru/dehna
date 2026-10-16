@@ -23,6 +23,13 @@ type AppMode = 'idle' | 'running' | 'paused' | 'break';
 
 const SAVE_KEY = 'dehna-work';
 
+const NAV = [
+  { href: '/', label: 'Home', icon: <path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" /> },
+  { href: '/exercises', label: 'Exercises', icon: <><circle cx="12" cy="5" r="2" /><path d="M12 7v6M6 10l6 1 6-1M9 21l3-8 3 8" /></> },
+  { href: '/history', label: 'History', icon: <path d="M5 20V12M12 20V5M19 20v-9" /> },
+  { href: '/settings', label: 'Settings', icon: <><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /></> },
+];
+
 type WorkSave = {
   savedAt: number;
   elapsedSeconds: number;
@@ -295,10 +302,14 @@ export default function WorkPage() {
       />
 
       <nav style={{ marginTop: 'auto', paddingTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)' }}>
-        <Link href="/" className="btn btn-ghost btn-sm">Home</Link>
-        <Link href="/exercises" className="btn btn-ghost btn-sm">Exercises</Link>
-        <Link href="/history" className="btn btn-ghost btn-sm">History</Link>
-        <Link href="/settings" className="btn btn-ghost btn-sm">Settings</Link>
+        {NAV.map(({ href, label, icon }) => (
+          <Link key={href} href={href} className="btn btn-ghost btn-sm" style={{ gap: 6 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {icon}
+            </svg>
+            {label}
+          </Link>
+        ))}
       </nav>
     </main>
   );

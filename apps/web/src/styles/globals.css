@@ -236,6 +236,52 @@ textarea {
   color: var(--color-text);
 }
 
+/* ── Body area picker ── */
+
+.area-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  width: 100%;
+}
+
+.area-body {
+  position: relative;
+  width: 260px;
+  height: 273px;
+  flex-shrink: 0;
+}
+
+.area-body svg {
+  width: 260px;
+  height: 273px;
+}
+
+/* Hollow rings until picked, so the figure stays visible underneath */
+.area-spot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface); /* light edge plus a teal ring reads on the teal shirt and the sand */
+  box-shadow: 0 0 0 2px var(--color-primary);
+  background-color: transparent;
+  transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.area-spot:hover {
+  transform: scale(1.15);
+}
+
+.area-spot[aria-pressed='true'] {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 6px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
 /* ── Break screen ── */
 
 .break-screen {
