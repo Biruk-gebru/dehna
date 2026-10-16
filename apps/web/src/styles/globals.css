@@ -236,6 +236,79 @@ textarea {
   color: var(--color-text);
 }
 
+/* ── Break screen ── */
+
+.break-screen {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.break-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 14px 20px;
+}
+
+.break-progress {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+}
+
+.break-progress > span {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background-color: var(--color-timer-bg);
+  overflow: hidden;
+}
+
+.break-progress > span > span {
+  display: block;
+  height: 100%;
+  background-color: var(--color-primary);
+  transform-origin: left;
+  transition: transform 0.5s linear;
+}
+
+.break-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  align-items: center;
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-4) 20px var(--space-7);
+}
+
+@media (min-width: 880px) {
+  .break-body { grid-template-columns: 1fr 1fr; }
+}
+
+.break-stage {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+  border-radius: 28px;
+  background-color: var(--color-break-bg);
+}
+
+.break-stage svg {
+  width: min(300px, 70vw);
+  height: auto;
+}
+
+.break-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 /* ── Home ── */
 
 .home-nav {

@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import type { Exercise } from '@/types';
-import { TimerRing } from '@/components/timer/TimerRing';
 import { ExerciseCard } from './ExerciseCard';
 import { ExerciseVisual } from './ExerciseVisual';
 import { Button } from '@/components/ui/Button';
@@ -52,92 +50,59 @@ export function RoutinePlayer({ routine, onComplete, onSkip }: RoutinePlayerProp
 
   if (!exercise) return null;
 
-  const progress = secondsLeft / exercise.duration;
+  const elapsed = 1 - secondsLeft / exercise.duration;
+  const next = routine[index + 1];
+  const isLast = index + 1 >= routine.length;
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--color-break-bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'var(--space-6)',
-        gap: 'var(--space-5)',
-      }}
-    >
-      {/* Minimal escape nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px' }}>
-        <Link href="/" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textDecoration: 'none', fontWeight: 'var(--font-weight-medium)' }}>
-          ደህና
-        </Link>
-        <Link href="/work" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', textDecoration: 'none' }}>
-          ← Back to timer
-        </Link>
-      </nav>
+    <main className="break-screen">
+      <header className="break-top">
+        <span style={{ fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)' }}>ደህና</span>
+        {/* One segment per exercise; the current one fills as its time runs down */}
+        <div className="break-progress" role="progressbar" aria-valuemin={1} aria-valuemax={routine.length} aria-valuenow={index + 1} aria-label={`Exercise ${index + 1} of ${routine.length}`}>
+          {routine.map((e, i) => (
+            <span key={e.id}>
+              <span style={{ transform: `scaleX(${i < index ? 1 : i === index ? elapsed : 0})` }} />
+            </span>
+          ))}
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => onSkip(routine.slice(0, index).map((e) => e.id))}>
+          Skip break
+        </button>
+      </header>
 
-      {/* Progress indicator */}
-      <p
-        style={{
-          fontSize: 'var(--font-size-sm)',
-          color: 'var(--color-text-muted)',
-        }}
-      >
-        {index + 1} of {routine.length}
-      </p>
+      <div className="break-body">
+        <div className="break-stage">
+          <ExerciseVisual exercise={exercise} />
+        </div>
 
-      {/* Countdown ring */}
-      <TimerRing progress={progress} size={120} strokeWidth={6}>
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 'var(--font-size-lg)',
-            fontWeight: 'var(--font-weight-medium)',
-            color: 'var(--color-text)',
-          }}
-        >
-          {formatTime(secondsLeft)}
-        </span>
-      </TimerRing>
+        <section className="break-info">
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+            Exercise {index + 1} of {routine.length}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-4)' }}>
+            <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 'var(--font-weight-light)', color: 'var(--color-text)', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              {exercise.name}
+            </h1>
+            <span aria-live="off" style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', color: 'var(--color-primary)' }}>
+              {formatTime(secondsLeft)}
+            </span>
+          </div>
 
-      {/* Exercise header */}
-      <div style={{ textAlign: 'center', maxWidth: 480 }}>
-        <h1
-          style={{
-            fontSize: 'var(--font-size-xl)',
-            fontWeight: 'var(--font-weight-bold)',
-            color: 'var(--color-text)',
-            lineHeight: 'var(--line-height-tight)',
-          }}
-        >
-          {exercise.name}
-        </h1>
-        <p
-          style={{
-            fontSize: 'var(--font-size-base)',
-            color: 'var(--color-text-muted)',
-            marginTop: 'var(--space-2)',
-          }}
-        >
-          {exercise.description}
-        </p>
+          <ExerciseCard exercise={exercise} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
+            <Button onClick={advance} style={{ minWidth: 200 }}>
+              {isLast ? 'Done, back to work' : 'Next exercise'}
+            </Button>
+            {next && (
+              <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                Up next: {next.name}
+              </span>
+            )}
+          </div>
+        </section>
       </div>
-
-      <ExerciseVisual exercise={exercise} />
-
-      <ExerciseCard exercise={exercise} />
-
-      <Button onClick={advance} style={{ minWidth: 200 }}>
-        {index + 1 >= routine.length ? 'Done — back to work' : 'Next exercise →'}
-      </Button>
-
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => onSkip(routine.slice(0, index).map((e) => e.id))}
-      >
-        Skip break
-      </button>
     </main>
   );
 }

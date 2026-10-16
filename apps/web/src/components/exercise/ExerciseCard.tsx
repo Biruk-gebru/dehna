@@ -9,10 +9,7 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
     <div
       style={{
         width: '100%',
-        maxWidth: 480,
-        backgroundColor: 'var(--color-surface)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 'var(--space-5)',
+        maxWidth: 520,
       }}
     >
       <ol
