@@ -175,7 +175,7 @@ const SPINAL_TWIST: Clip = {
     head: { turn: 25 },
     face: { gx: 0.7 },
     armR: { e: 42, a: 88, r: 1 },
-    armL: { e: 40, a: 13, r: 0.55, pe: 70, pa: -90 },
+    armL: { e: 48, a: -45, r: 0.85, pe: 70, pa: -90 },
   }, 2400, 1100),
 };
 

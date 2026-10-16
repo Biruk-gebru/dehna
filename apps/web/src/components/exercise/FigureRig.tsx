@@ -128,7 +128,8 @@ const STANDING: BodyParams = {
   legR: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
 };
 
-const SEATED_ARM: ArmParams = { ...ARM_REST, e: 36, a: 74, r: 0.8, pe: 50, pa: -70 };
+// Hands rest on the middle of the thighs (the collision step settles them on top)
+const SEATED_ARM: ArmParams = { ...ARM_REST, e: 29, a: 104, r: 0.8, pe: 50, pa: -70 };
 const SEATED_LEG: LegParams = { x: 12, y: 6, z: 40, pitch: 0, yaw: 6, out: 6 };
 
 const SEATED: BodyParams = {
@@ -278,6 +279,37 @@ function line(proj: Projector, pts: V[], w: number, c: string, bias = 0): Prim {
   return { k: 'line', pts: pp.map((p) => p.at), w, c, d: pp.reduce((s, p) => s + p.z, 0) / pp.length + bias };
 }
 
+/**
+ * A limb segment split into short pieces, each depth-sorted on its own. One long
+ * piece sorts by its midpoint, so an arm crossing the torso flips in front of or
+ * behind it all at once; short pieces sort where they actually are.
+ */
+function limb(proj: Projector, a: V, b: V, w: number, c: string, bias = 0, pieces = 3): Prim[] {
+  return Array.from({ length: pieces }, (_, i) => line(proj, [lerp(a, b, i / pieces), lerp(a, b, (i + 1) / pieces)], w, c, bias));
+}
+
+type Capsule = [V, V, number]; // segment start, end, radius
+
+function closestOnSegment(p: V, a: V, b: V): V {
+  const ab = sub(b, a);
+  const t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / Math.max(dot(ab, ab), 1e-9)));
+  return add(a, mul(ab, t));
+}
+
+/** Moves p out to the surface of any capsule it is inside, plus clearance. */
+function keepOutside(p: V, capsules: Capsule[], clearance: number, fallback: V): V {
+  let out = p;
+  for (let pass = 0; pass < 2; pass++) {
+    for (const [a, b, r] of capsules) {
+      const q = closestOnSegment(out, a, b);
+      const away = sub(out, q);
+      const d = len(away);
+      if (d < r + clearance) out = add(q, mul(d > 1e-6 ? mul(away, 1 / d) : fallback, r + clearance));
+    }
+  }
+  return out;
+}
+
 function circle(proj: Projector, at: V, r: number, c: string, bias = 0): Prim {
   const p = proj(at);
   return { k: 'circle', at: p.at, r, c, d: p.z + bias };
@@ -358,6 +390,7 @@ function propPrims(proj: Projector, cam: Camera, prop: Prop): Prim[] {
 function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Prim[] {
   const g = (k: string) => f[k];
   const prims: Prim[] = [];
+  const colliders: Capsule[] = [];
 
   const P: V = [g('pelvis.x'), (seated ? SEAT_HIP : STAND_HIP) + g('pelvis.y'), g('pelvis.z')];
   const hinge = rotX(g('torso.hinge'));
@@ -370,7 +403,7 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
 
   // Trunk: pants block at the hips, shirt over a curved spine, then waist and
   // chest bars that give the front view its taper and collapse in side view.
-  prims.push(line(proj, [add(P, [-HIP_W, 0, 0]), add(P, [HIP_W, 0, 0])], 16, PANTS, -3.5));
+  prims.push(line(proj, [add(P, [-HIP_W, 0, 0]), add(P, [HIP_W, 0, 0])], 16, PANTS, -4.5)); // under the shirt hem
   prims.push(line(proj, [add(P, apply(hinge, [0, 8, 0])), M, add(C, apply(R2, [0, -7, 0]))], 24, SHIRT, -4));
   prims.push(line(proj, [add(M, apply(R1, [-5, 0, 0])), add(M, apply(R1, [5, 0, 0]))], 18, SHIRT, -3.9));
   const chestMid = add(C, apply(R2, [0, -10, 0]));
@@ -423,7 +456,14 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
     [[-4.5, 10.4, 5], 4.2], [[0.5, 11.4, 4.6], 4.4], [[5, 10.6, 3.8], 4],
     [[8.8, 8, 2], 3],
   ];
-  for (const [local, r] of tufts) prims.push(circle(proj, headPt(local), r, HAIR));
+  // Fringe tufts overlap the face only when it faces the camera; side-on they
+  // just round out the hair's outline from behind the face.
+  const faceTowardCamera = proj(add(faceC, apply(Rh, [0, 0, 1]))).z - proj(faceC).z;
+  tufts.forEach(([local, r], i) => {
+    const tuft = circle(proj, headPt(local), r, HAIR);
+    const d = awayFromCamera ? faceD + 0.02 : i < 3 && faceTowardCamera > 0.45 ? tuft.d : faceD - 0.005;
+    prims.push({ ...tuft, d });
+  });
   const brow = g('face.brow'), pinch = g('face.pinch'), smile = g('face.smile');
   const closed = Math.max(blink, g('face.lids'));
 
@@ -459,18 +499,40 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
     }
   }
 
+  // Legs: ankles live in world space so planted feet stay put.
+  for (const [s, leg] of [[1, 'legL'], [-1, 'legR']] as const) {
+    const H = add(P, [s * HIP_W, 0, 0]);
+    const A: V = [s * g(`${leg}.x`), g(`${leg}.y`), g(`${leg}.z`)];
+    const out = g(`${leg}.out`) * RAD;
+    const [K, Ar] = solveIK(H, A, THIGH, SHIN, norm([s * Math.sin(out), 0.25, Math.cos(out)]));
+    prims.push(...limb(proj, H, K, 13, PANTS));
+    prims.push(...limb(proj, K, Ar, 11, PANTS));
+    colliders.push([H, K, 6.5], [K, Ar, 5.5]);
+
+    const pitch = g(`${leg}.pitch`) * RAD, yaw = g(`${leg}.yaw`) * RAD;
+    const fd: V = [s * Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
+    const sole = add(Ar, [0, -2.5, 0]);
+    prims.push(line(proj, [sub(sole, mul(fd, 2.5)), add(sole, mul(fd, 10))], 7.5, SHOE, 0.05));
+  }
+
+  // Hands can rest on the body but not sink into it: the chest, head, thighs
+  // and shins push a hand target back out to their surface before the arm solves.
+  colliders.push([P, M, 11.5], [M, add(C, apply(R2, [0, -6, 0])), 11.5], [Hc, Hc, 12]);
+
   // Arms
   const chestFwd = apply(R2, [0, 0, 1]);
   const chestUp = apply(R2, [0, 1, 0]);
   for (const [s, arm, S] of [[1, 'armL', SL], [-1, 'armR', SR]] as const) {
     const reach = (UPPER_ARM + FOREARM) * g(`${arm}.r`);
-    const T = add(S, mul(apply(R2, dirOf(g(`${arm}.e`), g(`${arm}.a`), s)), reach));
+    const T = keepOutside(add(S, mul(apply(R2, dirOf(g(`${arm}.e`), g(`${arm}.a`), s)), reach)), colliders, 5, chestFwd);
     const pole = apply(R2, dirOf(g(`${arm}.pe`), g(`${arm}.pa`), s));
     const [E, W] = solveIK(S, T, UPPER_ARM, FOREARM, pole);
 
-    prims.push(line(proj, [S, E], 8.5, SKIN));
-    prims.push(line(proj, [S, lerp(S, E, 0.55)], 10.5, SHIRT, 0.05));
-    prims.push(line(proj, [E, W], 7.5, SKIN));
+    // The sleeve reuses the upper arm's first two pieces exactly, so each sleeve
+    // piece sorts with (just above) the skin piece it covers.
+    prims.push(...limb(proj, S, E, 8.5, SKIN, 0, 4));
+    prims.push(...limb(proj, S, lerp(S, E, 0.5), 10.5, SHIRT, 0.05, 2));
+    prims.push(...limb(proj, E, W, 7.5, SKIN));
 
     const follow = norm(sub(W, E));
     const absolute = apply(R2, dirOf(g(`${arm}.he`), g(`${arm}.ha`), s));
@@ -508,21 +570,6 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
         });
       }
     }
-  }
-
-  // Legs: ankles live in world space so planted feet stay put.
-  for (const [s, leg] of [[1, 'legL'], [-1, 'legR']] as const) {
-    const H = add(P, [s * HIP_W, 0, 0]);
-    const A: V = [s * g(`${leg}.x`), g(`${leg}.y`), g(`${leg}.z`)];
-    const out = g(`${leg}.out`) * RAD;
-    const [K, Ar] = solveIK(H, A, THIGH, SHIN, norm([s * Math.sin(out), 0.25, Math.cos(out)]));
-    prims.push(line(proj, [H, K], 13, PANTS));
-    prims.push(line(proj, [K, Ar], 11, PANTS));
-
-    const pitch = g(`${leg}.pitch`) * RAD, yaw = g(`${leg}.yaw`) * RAD;
-    const fd: V = [s * Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
-    const sole = add(Ar, [0, -2.5, 0]);
-    prims.push(line(proj, [sub(sole, mul(fd, 2.5)), add(sole, mul(fd, 10))], 7.5, SHOE, 0.05));
   }
 
   return prims;
