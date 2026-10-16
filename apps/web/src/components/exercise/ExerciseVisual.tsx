@@ -1,312 +1,388 @@
 'use client';
 
 import type { Exercise } from '@/types';
-import { FigureRig, type Pose } from './FigureRig';
+import { FigureRig, merge, mirror, type Clip, type Pose, type PoseTarget } from './FigureRig';
 
 interface Props {
   exercise: Exercise;
 }
 
-// ─── Pose sequences ───────────────────────────────────────────────────────────
-// Each array defines a looping cycle: poses[last] → poses[0] → poses[1] → …
-// durationMs is how long each pose is the active target before advancing.
-// The rig's critically-damped engine (smoothDamp) handles all interpolation —
-// no eased values or manual cascade offsets belong here, just target angles.
+// ─── Clips ────────────────────────────────────────────────────────────────────
+// Each clip loops through its poses. A pose only names what differs from the
+// rest pose (standing or seated); the rig's spring smoothing does all the
+// interpolation, so these are just targets. See FigureRig for the conventions.
 
-// Default: slow breathing — shoulders rise on inhale, fall on exhale
-const BREATHE: Pose[] = [
-  { angles: { torso: -3, lShoulder: -16, rShoulder: 16, head: -3 }, durationMs: 2800 }, // inhale: chest opens
-  { angles: {},                                                      durationMs: 2800 }, // exhale: return
-];
+const both = (arm: PoseTarget['armL']): PoseTarget => ({ armL: arm, armR: arm });
+
+/** One side, back to base, the other side, back to base. */
+function alternate(side: PoseTarget, holdMs: number, betweenMs: number, base: PoseTarget = {}): Pose[] {
+  return [
+    { target: merge(base, side), durationMs: holdMs },
+    { target: base, durationMs: betweenMs },
+    { target: merge(base, mirror(side)), durationMs: holdMs },
+    { target: base, durationMs: betweenMs },
+  ];
+}
+
+const BREATHE: Clip = {
+  seated: true, yaw: 25,
+  poses: [
+    { target: { torso: { flex: -3 }, head: { nod: -3 }, ...both({ sy: 2, sz: -1.5 }) }, durationMs: 3000 },
+    { target: {}, durationMs: 3000 },
+  ],
+};
 
 // ── Neck ──────────────────────────────────────────────────────────────────────
 
-// Neck Side Tilt: ear toward shoulder, alternating — large angle so it reads clearly
-const NECK_SIDE_TILT: Pose[] = [
-  { angles: { head: -30 }, durationMs: 1600 },  // tilt LEFT
-  { angles: { head: 0 },   durationMs: 700 },
-  { angles: { head: 30 },  durationMs: 1600 },  // tilt RIGHT
-  { angles: { head: 0 },   durationMs: 700 },
-];
+const NECK_SIDE_TILT: Clip = {
+  yaw: 0,
+  poses: alternate({ head: { tilt: -30 }, ...both({ sy: -1 }) }, 2200, 900),
+};
 
-// Neck Rotation: head turns to look over each shoulder
-const NECK_ROTATION: Pose[] = [
-  { angles: { head: -34 }, durationMs: 1400 },  // look LEFT
-  { angles: { head: 0   }, durationMs: 700 },
-  { angles: { head: 34  }, durationMs: 1400 },  // look RIGHT
-  { angles: { head: 0   }, durationMs: 700 },
-];
+const NECK_ROTATION: Clip = {
+  seated: true, yaw: 12,
+  poses: alternate({ head: { turn: -62 } }, 2000, 900),
+};
 
-// Chin Tuck: head draws straight back, gaze level, slight compensating torso settle
-const NECK_CHIN_TUCK: Pose[] = [
-  { angles: { head: -12, torso: -2 }, durationMs: 1000 }, // chin retracts back
-  { angles: {},                        durationMs: 800 },
-];
+const NECK_CHIN_TUCK: Clip = {
+  seated: true, yaw: 78,
+  poses: [
+    { target: { head: { z: -4.5, nod: 6 } }, durationMs: 1800 },
+    { target: { head: { z: 1.5 } }, durationMs: 1300 },
+  ],
+};
 
-// Upper Trapezius: head tilts, OPPOSITE shoulder actively pulled DOWN to anchor the stretch
-const NECK_UPPER_TRAP: Pose[] = [
-  { angles: { head: -28, rShoulder: -18 }, durationMs: 1700 },  // tilt L, R shoulder anchors down
-  { angles: {},                            durationMs: 700 },
-  { angles: { head: 28,  lShoulder: 18  }, durationMs: 1700 },  // tilt R, L shoulder anchors down
-  { angles: {},                            durationMs: 700 },
-];
+// Right hand holds the seat edge, left hand rests on the right side of the head.
+const NECK_UPPER_TRAP: Clip = {
+  seated: true, yaw: 8,
+  poses: alternate({
+    head: { tilt: 30 },
+    armR: { e: 6, a: 20, r: 0.98, sy: -3, grip: 0.9 },
+    armL: { e: 152, a: 168, r: 0.67, pe: 120, pa: 0, hf: 0.6, he: 120, ha: 180, pron: -90 },
+  }, 2400, 1100),
+};
 
-// Levator Scapulae: diagonal head tilt-down + hand reaches behind head
-const NECK_LEVATOR_SCAP: Pose[] = [
-  { angles: { head: -22, rShoulder: -60, rElbow: -65 }, durationMs: 1700 }, // R hand behind head, look L-down
-  { angles: {},                                           durationMs: 900 },
-  { angles: { head: 22,  lShoulder: 60,  lElbow: 65  }, durationMs: 1700 }, // L hand behind head, look R-down
-  { angles: {},                                           durationMs: 900 },
-];
+// Right hand behind the head, gaze down toward the left knee.
+const NECK_LEVATOR_SCAP: Clip = {
+  seated: true, yaw: 20,
+  poses: alternate({
+    head: { nod: 26, turn: 24, tilt: 8 },
+    armR: { e: 150, a: -160, r: 0.58, pe: 115, pa: 30, hf: 0.5, he: 170, ha: 180, pron: -90 },
+  }, 2400, 1100),
+};
 
 // ── Shoulders ─────────────────────────────────────────────────────────────────
 
-// Shoulder Rolls: UP → BACK → DOWN → FORWARD — four distinct phases
-const SHOULDER_ROLLS: Pose[] = [
-  { angles: { lShoulder: -40, rShoulder: 40, lElbow: 5, rElbow: -5 },   durationMs: 700 }, // UP: arms rise
-  { angles: { lShoulder: 20,  rShoulder: -20, lElbow: -15, rElbow: 15 }, durationMs: 700 }, // BACK: arms sweep behind
-  { angles: {},                                                            durationMs: 600 }, // DOWN: return to rest
-  { angles: { lShoulder: -22, lElbow: 25, rShoulder: 22,  rElbow: -25 }, durationMs: 700 }, // FORWARD: arms swing forward
-];
+const shrug = (sy: number, sz: number) => both({ sy, sz });
+const ROLL_UP = shrug(7, 0), ROLL_FWD = shrug(2.5, 6), ROLL_DOWN = shrug(-2, 0), ROLL_BACK = shrug(2.5, -6);
 
-// Scapular Squeeze: elbows out at 90°, then pull BACK squeezing shoulder blades
-const SCAPULAR_SQUEEZE: Pose[] = [
-  { angles: { lShoulder: -18, lElbow: 72, rShoulder: 18, rElbow: -72 },  durationMs: 900 }, // elbows wide at 90°
-  { angles: { lShoulder: 18,  lElbow: 72, rShoulder: -18, rElbow: -72 }, durationMs: 1000 }, // pull elbows BACK — blades squeeze
-  { angles: {},                                                             durationMs: 700 },
-];
+const SHOULDER_ROLLS: Clip = {
+  yaw: 40,
+  poses: [
+    ...[ROLL_BACK, ROLL_UP, ROLL_FWD, ROLL_DOWN, ROLL_BACK, ROLL_UP, ROLL_FWD, ROLL_DOWN],
+    ...[ROLL_FWD, ROLL_UP, ROLL_BACK, ROLL_DOWN, ROLL_FWD, ROLL_UP, ROLL_BACK, ROLL_DOWN],
+  ].map((target) => ({ target, durationMs: 620 })),
+};
 
-// Cross-Body: right arm crosses body, left forearm presses it in — then switch
-const CROSS_BODY: Pose[] = [
-  { angles: { rShoulder: -62, rElbow: 12, lShoulder: 28, lElbow: -50 }, durationMs: 1400 }, // R crosses, L presses
-  { angles: {},                                                           durationMs: 800 },
-  { angles: { lShoulder: 62,  lElbow: -12, rShoulder: -28, rElbow: 50 }, durationMs: 1400 }, // L crosses, R presses
-  { angles: {},                                                            durationMs: 800 },
-];
+// Elbows bent to 90° at the sides, then the shoulder blades draw together.
+const SQUEEZE_BASE = both({ e: 42, a: 88, r: 0.71, pe: 15, pa: -90 });
+const SCAPULAR_SQUEEZE: Clip = {
+  seated: true, yaw: 55,
+  poses: [
+    { target: merge(SQUEEZE_BASE, both({ sz: -5, e: 38, a: 62 }), { torso: { flex: -4 } }), durationMs: 1900 },
+    { target: SQUEEZE_BASE, durationMs: 1300 },
+  ],
+};
 
-// Overhead Reach: both arms genuinely overhead, lean side to side, torso compensates
-const OVERHEAD_REACH: Pose[] = [
-  { angles: { lShoulder: -155, lElbow: -12, rShoulder: 155, rElbow: 12, torso: -7 }, durationMs: 1400 }, // lean LEFT
-  { angles: { lShoulder: -155, lElbow: -12, rShoulder: 155, rElbow: 12, torso: 7  }, durationMs: 1400 }, // lean RIGHT
-];
+// Right arm across the chest, left forearm hooks it in close.
+const CROSS_BODY: Clip = {
+  yaw: 20,
+  poses: alternate({
+    armR: { e: 88, a: 160, r: 0.98, pe: 90, pa: -90 },
+    armL: { e: 76, a: 145, r: 0.48, pe: 0, pa: 0 },
+    head: { turn: 10 },
+  }, 2400, 1000),
+};
 
-// Doorframe Chest Stretch: one arm makes L-shape against wall — alternating sides
-const DOORFRAME: Pose[] = [
-  { angles: { lShoulder: -82, lElbow: -88, rShoulder: 12, rElbow: -8 }, durationMs: 1500 }, // L arm L-shape
-  { angles: {},                                                            durationMs: 900 },
-  { angles: { rShoulder: 82,  rElbow: 88,  lShoulder: -12, lElbow: 8 }, durationMs: 1500 }, // R arm L-shape
-  { angles: {},                                                            durationMs: 900 },
-];
+// Hands meet just in front of the head. Aiming slightly forward (a < 180) also
+// makes the arms rise in front of the body instead of sweeping across the face.
+const ARMS_UP = both({ e: 162, a: 122, r: 0.98, pe: 90, pa: 0, grip: 0.9 });
+const OVERHEAD_REACH: Clip = {
+  yaw: 0,
+  poses: [
+    { target: merge(ARMS_UP, { torso: { side: -13 }, head: { tilt: -4 } }), durationMs: 2200 },
+    { target: ARMS_UP, durationMs: 800 },
+    { target: merge(ARMS_UP, { torso: { side: 13 }, head: { tilt: 4 } }), durationMs: 2200 },
+    { target: ARMS_UP, durationMs: 800 },
+  ],
+};
+
+// Forearm flat on the door frame at shoulder height, step through.
+const DOORFRAME: Clip = {
+  yaw: 10, props: [{ kind: 'doorway' }],
+  poses: alternate({
+    pelvis: { z: 14 },
+    torso: { twist: 10 },
+    armR: { e: 132, a: -35, r: 0.71, pe: 60, pa: -35, hf: 0.6, he: 180, ha: 0, pron: 90 },
+    legR: { z: 24 },
+    legL: { z: 6 },
+  }, 2400, 1100),
+};
 
 // ── Back ──────────────────────────────────────────────────────────────────────
 
-// Seated Cat-Cow: Cow = torso arches, chest opens, head lifts; Cat = torso rounds, shoulders forward, chin drops
-const CAT_COW: Pose[] = [
-  { angles: { torso: -7, lShoulder: -16, rShoulder: 16, head: -6 }, durationMs: 1700 }, // COW: arch
-  { angles: { torso: 10, lShoulder: -8,  rShoulder: 8,  head: 14 }, durationMs: 1700 }, // CAT: round
-];
+const CAT_COW: Clip = {
+  seated: true, yaw: 75,
+  poses: [
+    { target: { torso: { flex: -14 }, head: { nod: -14 }, ...both({ sz: -3, e: 36, a: 82, r: 0.86 }) }, durationMs: 2300 },
+    { target: { torso: { flex: 24 }, head: { nod: 24 }, ...both({ sz: 3, e: 22, a: 70, r: 0.9 }) }, durationMs: 2300 },
+  ],
+};
 
-// Seated Thoracic Rotation: arms cross on chest, torso rotates keeping hips still
-const THORACIC_ROTATION: Pose[] = [
-  { angles: { lShoulder: 28, lElbow: -60, rShoulder: -28, rElbow: 60, torso: 0  },  durationMs: 600 }, // arms crossed
-  { angles: { lShoulder: 28, lElbow: -60, rShoulder: -28, rElbow: 60, torso: 18 },  durationMs: 1300 }, // rotate RIGHT
-  { angles: { lShoulder: 28, lElbow: -60, rShoulder: -28, rElbow: 60, torso: 0  },  durationMs: 500 }, // center
-  { angles: { lShoulder: 28, lElbow: -60, rShoulder: -28, rElbow: 60, torso: -18 }, durationMs: 1300 }, // rotate LEFT
-  { angles: { lShoulder: 28, lElbow: -60, rShoulder: -28, rElbow: 60, torso: 0  },  durationMs: 500 }, // center
-];
+const ARMS_CROSSED = both({ e: 82, a: 162, r: 0.54, pe: 25, pa: 90 });
+const THORACIC_ROTATION: Clip = {
+  seated: true, yaw: 10,
+  poses: [
+    { target: ARMS_CROSSED, durationMs: 700 },
+    { target: merge(ARMS_CROSSED, { torso: { twist: -42 }, head: { turn: -14 } }), durationMs: 1900 },
+    { target: ARMS_CROSSED, durationMs: 700 },
+    { target: merge(ARMS_CROSSED, { torso: { twist: 42 }, head: { turn: 14 } }), durationMs: 1900 },
+  ],
+};
 
-// Seated Side Bend: raise opposite arm overhead, lean sideways, head follows the lean
-const SIDE_BEND: Pose[] = [
-  { angles: { torso: -15, head: -7, rShoulder: 152, rElbow: 8  }, durationMs: 1500 }, // lean L, R arm overhead
-  { angles: { torso: 0,   head: 0 },                                durationMs: 700 },
-  { angles: { torso: 15,  head: 7,  lShoulder: -152, lElbow: -8 }, durationMs: 1500 }, // lean R, L arm overhead
-  { angles: { torso: 0,   head: 0 },                                durationMs: 700 },
-];
+const SIDE_BEND: Clip = {
+  seated: true, yaw: 0,
+  poses: alternate({
+    torso: { side: 18 },
+    head: { tilt: 8 },
+    armR: { e: 165, a: 130, r: 0.96, pe: 90, pa: 0, grip: 0.8 },
+    armL: { e: 25, a: 20, r: 0.92 },
+  }, 2400, 1000),
+};
 
-// Seated Spinal Twist: one hand on opposite knee, other hand on chair back, deep rotation
-const SPINAL_TWIST: Pose[] = [
-  { angles: { torso: -20, rShoulder: -38, rElbow: 28, lShoulder: 32, lElbow: -25 }, durationMs: 1600 }, // twist LEFT
-  { angles: { torso: 0 },                                                            durationMs: 800 },
-  { angles: { torso: 20,  lShoulder: 38,  lElbow: -28, rShoulder: -32, rElbow: 25 }, durationMs: 1600 }, // twist RIGHT
-  { angles: { torso: 0 },                                                             durationMs: 800 },
-];
+// Right hand on the outside of the left knee, left hand on the chair back.
+const SPINAL_TWIST: Clip = {
+  seated: true, yaw: 15,
+  poses: alternate({
+    torso: { twist: 42 },
+    head: { turn: 25 },
+    armR: { e: 42, a: 88, r: 1 },
+    armL: { e: 40, a: 13, r: 0.55, pe: 70, pa: -90 },
+  }, 2400, 1100),
+};
 
-// Standing Back Extension: hands on lower back, lean BACKWARD, elbows behind
-const BACK_EXTENSION: Pose[] = [
-  { angles: { torso: -20, lShoulder: 30, lElbow: 52, rShoulder: -30, rElbow: -52 }, durationMs: 1500 }, // arch back, hands on lower back
-  { angles: { torso: 0 },                                                            durationMs: 1000 },
-];
+const HANDS_LOW_BACK = both({ e: 23, a: -122, r: 0.7, pe: 80, pa: -50, hf: 0.7, he: 0, ha: 0 });
+const BACK_EXTENSION: Clip = {
+  yaw: 75,
+  poses: [
+    { target: merge(HANDS_LOW_BACK, { torso: { flex: -20, hinge: -6 }, head: { nod: -16 }, pelvis: { z: 3 } }), durationMs: 2200 },
+    { target: HANDS_LOW_BACK, durationMs: 1500 },
+  ],
+};
 
-// Chest Opener: arms clasp behind back, shoulder blades squeeze, chest lifts
-const CHEST_OPENER: Pose[] = [
-  { angles: { lShoulder: 38, lElbow: 58, rShoulder: -38, rElbow: -58, torso: -5 }, durationMs: 1500 }, // arms behind, chest open
-  { angles: {},                                                                      durationMs: 900 },
-];
+const CHEST_OPENER: Clip = {
+  yaw: 70,
+  poses: [
+    { target: merge(both({ e: 48, a: -110, r: 0.98, sz: -3 }), { torso: { flex: -6 }, head: { nod: -5 } }), durationMs: 2600 },
+    { target: both({ e: 24, a: -124, r: 0.98 }), durationMs: 1500 },
+  ],
+};
 
-// Desk Forward Fold: deep forward fold, torso nearly parallel to floor, head drops, arms reach toward desk
-const FORWARD_FOLD: Pose[] = [
-  { angles: { torso: 58, lShoulder: -30, lElbow: 12, rShoulder: 30, rElbow: -12, head: 22 }, durationMs: 1900 }, // fold deep
-  { angles: { torso: 0,  head: 0 },                                                            durationMs: 1300 },
-];
+// L-shape at the desk: hinge from the hips, hands on the desk, head between the arms.
+const FORWARD_FOLD: Clip = {
+  yaw: 80, shift: -42, props: [{ kind: 'desk', z: 84 }],
+  poses: [
+    { target: merge(both({ e: 162, a: 90, r: 0.97, pe: 90, pa: 0, grip: 0.6 }), { torso: { hinge: 88 }, head: { nod: 20 } }), durationMs: 4200 },
+    { target: merge(both({ e: 137, a: 90, r: 0.97, pe: 90, pa: 0, grip: 0.6 }), { torso: { hinge: 75 }, head: { nod: 8 } }), durationMs: 1800 },
+  ],
+};
 
 // ── Wrists / Elbows ───────────────────────────────────────────────────────────
 
-// Wrist Circles: arms extended forward-and-out, wrists rotate in large circles
-const WRIST_CIRCLES: Pose[] = [
-  { angles: { lShoulder: -58, lElbow: 68, lWrist: 38,  rShoulder: 58, rElbow: -68, rWrist: -38 }, durationMs: 750 }, // circle out
-  { angles: { lShoulder: -58, lElbow: 68, lWrist: -38, rShoulder: 58, rElbow: -68, rWrist: 38  }, durationMs: 750 }, // circle in
-];
+const ARMS_FORWARD = { e: 84, a: 86, r: 0.97, pe: 90, pa: 0, hf: 1, grip: 0.8 };
+const wrist = (he: number, ha: number) => both({ ...ARMS_FORWARD, he, ha });
+const W_UP = wrist(126, 86), W_OUT = wrist(84, 44), W_DOWN = wrist(42, 86), W_IN = wrist(84, 128);
+const WRIST_CIRCLES: Clip = {
+  seated: true, yaw: 35,
+  poses: [
+    ...[W_UP, W_OUT, W_DOWN, W_IN, W_UP, W_OUT, W_DOWN, W_IN],
+    ...[W_UP, W_IN, W_DOWN, W_OUT, W_UP, W_IN, W_DOWN, W_OUT],
+  ].map((target) => ({ target, durationMs: 480 })),
+};
 
-// Prayer Stretch: palms pressed together at chest, elbows wide, hands lower to stretch wrist flexors
-const WRIST_PRAYER: Pose[] = [
-  { angles: { lShoulder: -22, lElbow: 78, lWrist: 14, rShoulder: 22, rElbow: -78, rWrist: -14 }, durationMs: 1400 }, // palms together at chest
-  { angles: { lShoulder: -14, lElbow: 82, lWrist: 22, rShoulder: 14, rElbow: -82, rWrist: -22 }, durationMs: 1100 }, // lower hands — stretch deepens
-  { angles: {},                                                                                     durationMs: 1000 },
-];
+const PALMS = { pe: 25, pa: 0, hf: 1, he: 172, ha: 90, pron: 180, grip: 0.5 };
+const WRIST_PRAYER: Clip = {
+  seated: true, yaw: 30,
+  poses: [
+    { target: both({ ...PALMS, e: 56, a: 124, r: 0.55 }), durationMs: 1600 },
+    { target: both({ ...PALMS, e: 32, a: 127, r: 0.8 }), durationMs: 2600 },
+  ],
+};
 
-// Extensor Stretch: one arm extended, other hand presses fingers DOWN, then switch
-const WRIST_EXTENSOR: Pose[] = [
-  { angles: { rShoulder: 48, rElbow: -62, rWrist: -42, lShoulder: -28, lElbow: 52 }, durationMs: 1500 }, // R arm out, wrist bent down, L presses
-  { angles: {},                                                                        durationMs: 800 },
-  { angles: { lShoulder: -48, lElbow: 62, lWrist: 42, rShoulder: 28, rElbow: -52  }, durationMs: 1500 }, // L arm out, R presses
-  { angles: {},                                                                        durationMs: 800 },
-];
+// Right arm out, palm down, left hand presses the fingers down and in.
+const WRIST_EXTENSOR: Clip = {
+  seated: true, yaw: 30,
+  poses: alternate({
+    armR: { e: 85, a: 90, r: 1, hf: 1, he: 20, ha: 90, pron: -90, grip: 0.5 },
+    armL: { e: 81, a: 119, r: 1, pe: 0, pa: 0, hf: 0.6, he: 90, ha: 170, grip: 0.5 },
+  }, 2400, 1000),
+};
 
-// Finger Spreads: arms lower in front (belly height), wrists spread open vs make fist
-const FINGER_SPREADS: Pose[] = [
-  { angles: { lShoulder: -28, lElbow: 52, lWrist: 28,  rShoulder: 28, rElbow: -52, rWrist: -28 }, durationMs: 900 }, // OPEN wide
-  { angles: { lShoulder: -28, lElbow: 52, lWrist: -18, rShoulder: 28, rElbow: -52, rWrist: 18  }, durationMs: 900 }, // CLOSE to fist
-];
+const HANDS_UP = { e: 62, a: 78, r: 0.74, pe: 20, pa: -80, hf: 0.8, he: 150, ha: 90, pron: 90 };
+const FINGER_SPREADS: Clip = {
+  seated: true, yaw: 12,
+  poses: [
+    { target: both({ ...HANDS_UP, grip: 0 }), durationMs: 1400 },
+    { target: both({ ...HANDS_UP, grip: 1 }), durationMs: 1400 },
+  ],
+};
 
-// Forearm Rotation: elbows tucked, forearms point forward, palms flip up → down
-const FOREARM_ROTATION: Pose[] = [
-  { angles: { lShoulder: -15, lElbow: 88, lWrist: 48,  rShoulder: 15, rElbow: -88, rWrist: -48 }, durationMs: 1100 }, // palms UP
-  { angles: { lShoulder: -15, lElbow: 88, lWrist: -48, rShoulder: 15, rElbow: -88, rWrist: 48  }, durationMs: 1100 }, // palms DOWN
-];
+const FOREARMS_FORWARD = { e: 70, a: 84, r: 0.7, pe: 10, pa: -90 };
+const FOREARM_ROTATION: Clip = {
+  seated: true, yaw: 35,
+  poses: [
+    { target: both({ ...FOREARMS_FORWARD, pron: 90 }), durationMs: 1500 },
+    { target: both({ ...FOREARMS_FORWARD, pron: -90 }), durationMs: 1500 },
+  ],
+};
 
 // ── Hips / Legs ───────────────────────────────────────────────────────────────
 
-// Seated Hip Flexor: seated, foot slides back off chair, weight shifts forward — alternating sides
-const HIP_FLEXOR: Pose[] = [
-  { angles: { rHip: 14,  rKnee: 10,  torso: 5  }, durationMs: 1600 }, // R foot back, lean forward
-  { angles: {},                                     durationMs: 900 },
-  { angles: { lHip: -14, lKnee: -10, torso: -5 }, durationMs: 1600 }, // L foot back
-  { angles: {},                                     durationMs: 900 },
-];
+// Edge of the seat, right foot slides back so the knee drops below the hip.
+const HIP_FLEXOR: Clip = {
+  seated: true, yaw: 65,
+  poses: alternate({
+    pelvis: { z: 8 },
+    torso: { hinge: 4 },
+    legR: { x: 11, y: 8, z: 4, pitch: 50, out: 0 },
+  }, 2400, 1100),
+};
 
-// Figure Four Hip Stretch: seated, ankle rests on opposite knee — hip opens wide, ankle flexes
-const FIGURE_FOUR: Pose[] = [
-  { angles: { rHip: 48, rKnee: -58, rAnkle: 22 }, durationMs: 1600 }, // R leg opens wide: ankle on L knee
-  { angles: {},                                     durationMs: 1000 },
-  { angles: { lHip: -48, lKnee: 58, lAnkle: -22 }, durationMs: 1600 }, // L leg opens wide
-  { angles: {},                                      durationMs: 1000 },
-];
+// Right ankle over the left knee, knee drops out, then a gentle hinge forward.
+const FOUR = { legR: { x: -8, y: 56, z: 38, pitch: 0, yaw: -85, out: 80 } };
+const FIGURE_FOUR: Clip = {
+  seated: true, yaw: 0,
+  poses: [
+    { target: FOUR, durationMs: 1900 },
+    { target: merge(FOUR, { torso: { hinge: 18 } }), durationMs: 2200 },
+    { target: {}, durationMs: 1100 },
+    { target: mirror(FOUR), durationMs: 1900 },
+    { target: merge(mirror(FOUR), { torso: { hinge: 18 } }), durationMs: 2200 },
+    { target: {}, durationMs: 1100 },
+  ],
+};
 
-// Ankle Circles: seated, foot lifted, the ankle joint itself traces the circle (not the hip/knee)
-const ANKLE_CIRCLES: Pose[] = [
-  { angles: { rHip: 6, rKnee: -20, rAnkle: -20 }, durationMs: 480 },
-  { angles: { rHip: 6, rKnee: -20, rAnkle: 20  }, durationMs: 480 },
-];
+const lifted = (pitch: number, yaw: number): PoseTarget => ({ legR: { y: 18, z: 50, pitch, yaw } });
+const ANKLE_LOOP = [lifted(30, 8), lifted(0, 40), lifted(-30, 8), lifted(0, -25)];
+const ANKLE_CIRCLES: Clip = {
+  seated: true, yaw: 50,
+  poses: [
+    ...[...ANKLE_LOOP, ...ANKLE_LOOP].map((target) => ({ target, durationMs: 520 })),
+    { target: {}, durationMs: 700 },
+    ...[...ANKLE_LOOP, ...ANKLE_LOOP].map((target) => ({ target: mirror(target), durationMs: 520 })),
+    { target: {}, durationMs: 700 },
+  ],
+};
 
-// Standing Calf Raises: whole figure rises up onto toes, ankles point down, knees soften slightly
-const CALF_RAISES: Pose[] = [
-  { angles: { rootY: -15, lKnee: -5, rKnee: -5, lAnkle: -20, rAnkle: -20 }, durationMs: 950 }, // rise UP onto toes
-  { angles: { rootY: 0 },                                                     durationMs: 800 }, // lower back down
-];
+// Behind the chair, hands on its backrest, rising onto the toes.
+const HANDS_ON_CHAIR = both({ e: 25, a: 99, r: 0.79, pe: 70, pa: -90, grip: 0.9 });
+const CALF_RAISES: Clip = {
+  yaw: 75, props: [{ kind: 'chair-front', z: 36 }],
+  poses: [
+    { target: merge(HANDS_ON_CHAIR, { pelvis: { y: 7 }, legL: { y: 13, pitch: 38 }, legR: { y: 13, pitch: 38 } }), durationMs: 1200 },
+    { target: HANDS_ON_CHAIR, durationMs: 1000 },
+  ],
+};
 
-// Standing Hip Circles: hula-hoop pelvis motion — 4-phase circle: L → forward → R → back
-const HIP_CIRCLES: Pose[] = [
-  { angles: { torso: -10, lHip: -5, rHip: 5  }, durationMs: 580 }, // lean LEFT
-  { angles: { torso: 8,   lHip: -4, rHip: 4  }, durationMs: 580 }, // lean FORWARD
-  { angles: { torso: 10,  lHip: 5,  rHip: -5 }, durationMs: 580 }, // lean RIGHT
-  { angles: { torso: -8,  lHip: 4,  rHip: -4 }, durationMs: 580 }, // lean BACK
-];
+// Hands on hips; the pelvis traces a circle while the feet stay planted.
+const HANDS_ON_HIPS = both({ e: 3, a: 90, r: 0.74, pe: 90, pa: -15, hf: 0.5, he: 0, ha: 180, grip: 0.6 });
+const hips = (x: number, z: number) => merge(HANDS_ON_HIPS, {
+  pelvis: { x, z },
+  torso: { side: -x * 0.9, flex: -z * 0.7 },
+  legL: { x: 13 }, legR: { x: 13 },
+});
+const HIP_CIRCLES: Clip = {
+  yaw: 30,
+  poses: [
+    hips(6, 0), hips(0, 6), hips(-6, 0), hips(0, -6), hips(6, 0), hips(0, 6), hips(-6, 0), hips(0, -6),
+    hips(6, 0), hips(0, -6), hips(-6, 0), hips(0, 6), hips(6, 0), hips(0, -6), hips(-6, 0), hips(0, 6),
+  ].map((target) => ({ target, durationMs: 650 })),
+};
 
-// Hamstring Desk Stretch: standing, one leg elevated on desk — leg swings forward/up, slight forward lean
-const HAMSTRING_DESK: Pose[] = [
-  { angles: { rHip: -58, rKnee: -8, torso: 10 }, durationMs: 1600 }, // R leg elevated forward, lean in
-  { angles: {},                                    durationMs: 900 },
-  { angles: { lHip: 58,  lKnee: 8,  torso: -10 }, durationMs: 1600 }, // L leg elevated
-  { angles: {},                                    durationMs: 900 },
-];
+// Heel up on a chair seat, leg straight, hinge forward from the hips.
+const HAMSTRING_DESK: Clip = {
+  yaw: 80, shift: -20, props: [{ kind: 'ledge', z: 52 }],
+  poses: alternate({
+    torso: { hinge: 22 },
+    legR: { x: 9, y: 50, z: 66, pitch: -55, out: 0 },
+    ...both({ e: 40, a: 85, r: 0.95 }),
+  }, 2600, 1100),
+};
 
-// Seated Leg Extension: one leg lifts and extends straight — knee straightens, toes point
-const SEATED_EXTENSION: Pose[] = [
-  { angles: { rHip: 8,  rKnee: -55, rAnkle: 15 }, durationMs: 1200 }, // R leg extends forward-straight
-  { angles: {},                                     durationMs: 800 },
-  { angles: { lHip: -8, lKnee: 55,  lAnkle: -15 }, durationMs: 1200 }, // L leg extends
-  { angles: {},                                     durationMs: 800 },
-];
+const SEATED_EXTENSION: Clip = {
+  seated: true, yaw: 70,
+  poses: alternate({ legR: { y: 44, z: 78, pitch: -25, out: 0 } }, 1900, 1100),
+};
 
-// Standing Calf Stretch: lunge stance — front knee bends, back heel presses down (ankle dorsiflexed)
-const CALF_STRETCH: Pose[] = [
-  { angles: { lHip: -20, lKnee: 18, rHip: 15, rKnee: -14, rAnkle: 18, torso: 6 },  durationMs: 1500 }, // L foot forward (lunge), R heel back
-  { angles: {},                                                                       durationMs: 800 },
-  { angles: { rHip: 20,  rKnee: -18, lHip: -15, lKnee: 14, lAnkle: -18, torso: -6 }, durationMs: 1500 }, // R foot forward
-  { angles: {},                                                                       durationMs: 800 },
-];
+// Hands on the wall, right foot back with the heel down, front knee bends.
+const CALF_STRETCH: Clip = {
+  yaw: 80, props: [{ kind: 'wall', z: 60 }],
+  poses: alternate({
+    pelvis: { y: -5, z: 6 },
+    torso: { hinge: 12 },
+    legR: { z: -34, x: 9 },
+    legL: { z: 18 },
+    ...both({ e: 78, a: 90, r: 0.97, pe: 0, pa: 0, hf: 0.6, he: 180, ha: 90, pron: 90 }),
+  }, 2600, 1100),
+};
 
-// Seated Glute Activation: isometric squeeze — very subtle hip engagement, hold and release
-const GLUTE_SQUEEZE: Pose[] = [
-  { angles: { lHip: -6, rHip: 6, lKnee: -5, rKnee: 5, torso: -2 }, durationMs: 1200 }, // engage/squeeze
-  { angles: {},                                                       durationMs: 900 },
-];
+const GLUTE_SQUEEZE: Clip = {
+  seated: true, yaw: 35,
+  poses: [
+    { target: { pelvis: { y: 1.5 }, torso: { flex: -3 }, head: { nod: -2 } }, durationMs: 1800 },
+    { target: {}, durationMs: 1300 },
+  ],
+};
 
-// ─── Seated flag ─────────────────────────────────────────────────────────────
+const STILL_SEATED: Clip = { seated: true, yaw: 25, poses: [] };
 
-const SEATED_IDS = new Set([
-  'neck-chin-tuck-01', 'neck-rotation-01', 'neck-upper-trap-01', 'neck-levator-scap-01',
-  'shoulder-scapular-squeeze-01',
-  'back-cat-cow-01', 'back-thoracic-rotation-01', 'back-side-bend-01', 'back-spinal-twist-01',
-  'wrist-circles-01', 'wrist-prayer-01', 'wrist-extensor-01', 'wrist-finger-spreads-01', 'wrist-forearm-rotation-01',
-  'hips-seated-hip-flexor-01', 'hips-figure-four-01', 'hips-ankle-circles-01',
-  'legs-seated-extension-01', 'legs-glute-squeeze-01',
-  'cognitive-box-breathing-01', 'cognitive-body-scan-01', 'cognitive-grounding-01', 'cognitive-breath-counting-01',
-]);
+const CLIPS: Record<string, Clip> = {
+  'neck-side-tilt-01': NECK_SIDE_TILT,
+  'neck-rotation-01': NECK_ROTATION,
+  'neck-chin-tuck-01': NECK_CHIN_TUCK,
+  'neck-upper-trap-01': NECK_UPPER_TRAP,
+  'neck-levator-scap-01': NECK_LEVATOR_SCAP,
+  'shoulder-rolls-01': SHOULDER_ROLLS,
+  'shoulder-scapular-squeeze-01': SCAPULAR_SQUEEZE,
+  'shoulder-cross-body-01': CROSS_BODY,
+  'shoulder-overhead-reach-01': OVERHEAD_REACH,
+  'shoulder-doorframe-01': DOORFRAME,
+  'back-cat-cow-01': CAT_COW,
+  'back-thoracic-rotation-01': THORACIC_ROTATION,
+  'back-side-bend-01': SIDE_BEND,
+  'back-spinal-twist-01': SPINAL_TWIST,
+  'back-extension-01': BACK_EXTENSION,
+  'back-chest-opener-01': CHEST_OPENER,
+  'back-forward-fold-01': FORWARD_FOLD,
+  'wrist-circles-01': WRIST_CIRCLES,
+  'wrist-prayer-01': WRIST_PRAYER,
+  'wrist-extensor-01': WRIST_EXTENSOR,
+  'wrist-finger-spreads-01': FINGER_SPREADS,
+  'wrist-forearm-rotation-01': FOREARM_ROTATION,
+  'hips-seated-hip-flexor-01': HIP_FLEXOR,
+  'hips-figure-four-01': FIGURE_FOUR,
+  'hips-ankle-circles-01': ANKLE_CIRCLES,
+  'hips-calf-raises-01': CALF_RAISES,
+  'hips-hip-circles-01': HIP_CIRCLES,
+  'legs-hamstring-desk-01': HAMSTRING_DESK,
+  'legs-seated-extension-01': SEATED_EXTENSION,
+  'legs-calf-stretch-01': CALF_STRETCH,
+  'legs-glute-squeeze-01': GLUTE_SQUEEZE,
+};
 
-// ─── Pose selector ───────────────────────────────────────────────────────────
-
-function getPoses(id: string): Pose[] {
-  switch (id) {
-    // Neck
-    case 'neck-side-tilt-01':      return NECK_SIDE_TILT;
-    case 'neck-rotation-01':       return NECK_ROTATION;
-    case 'neck-chin-tuck-01':      return NECK_CHIN_TUCK;
-    case 'neck-upper-trap-01':     return NECK_UPPER_TRAP;
-    case 'neck-levator-scap-01':   return NECK_LEVATOR_SCAP;
-    // Shoulders
-    case 'shoulder-rolls-01':          return SHOULDER_ROLLS;
-    case 'shoulder-scapular-squeeze-01': return SCAPULAR_SQUEEZE;
-    case 'shoulder-cross-body-01':     return CROSS_BODY;
-    case 'shoulder-overhead-reach-01': return OVERHEAD_REACH;
-    case 'shoulder-doorframe-01':      return DOORFRAME;
-    // Back
-    case 'back-cat-cow-01':          return CAT_COW;
-    case 'back-thoracic-rotation-01': return THORACIC_ROTATION;
-    case 'back-side-bend-01':        return SIDE_BEND;
-    case 'back-spinal-twist-01':     return SPINAL_TWIST;
-    case 'back-extension-01':        return BACK_EXTENSION;
-    case 'back-chest-opener-01':     return CHEST_OPENER;
-    case 'back-forward-fold-01':     return FORWARD_FOLD;
-    // Wrists
-    case 'wrist-circles-01':         return WRIST_CIRCLES;
-    case 'wrist-prayer-01':          return WRIST_PRAYER;
-    case 'wrist-extensor-01':        return WRIST_EXTENSOR;
-    case 'wrist-finger-spreads-01':  return FINGER_SPREADS;
-    case 'wrist-forearm-rotation-01': return FOREARM_ROTATION;
-    // Hips / Legs
-    case 'hips-seated-hip-flexor-01': return HIP_FLEXOR;
-    case 'hips-figure-four-01':       return FIGURE_FOUR;
-    case 'hips-ankle-circles-01':     return ANKLE_CIRCLES;
-    case 'hips-calf-raises-01':       return CALF_RAISES;
-    case 'hips-hip-circles-01':       return HIP_CIRCLES;
-    case 'legs-hamstring-desk-01':    return HAMSTRING_DESK;
-    case 'legs-seated-extension-01':  return SEATED_EXTENSION;
-    case 'legs-calf-stretch-01':      return CALF_STRETCH;
-    case 'legs-glute-squeeze-01':     return GLUTE_SQUEEZE;
-    // Cognitive / unspecified → gentle breathing
-    default: return BREATHE;
-  }
+export function getClip(exercise: Exercise): Clip {
+  if (exercise.type === 'cognitive') return STILL_SEATED;
+  return CLIPS[exercise.id] ?? BREATHE;
 }
 
 // ─── Eye visual (unchanged) ───────────────────────────────────────────────────
@@ -390,11 +466,7 @@ export function ExerciseVisual({ exercise }: Props) {
       {exercise.type === 'eye-break' ? (
         <EyeVisual id={exercise.id} />
       ) : (
-        <FigureRig
-          poses={getPoses(exercise.id)}
-          seated={SEATED_IDS.has(exercise.id)}
-          static={exercise.type === 'cognitive'}
-        />
+        <FigureRig clip={getClip(exercise)} static={exercise.type === 'cognitive'} />
       )}
     </div>
   );

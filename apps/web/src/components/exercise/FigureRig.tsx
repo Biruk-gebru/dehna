@@ -1,325 +1,581 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
+//
+// The figure is a 3D skeleton projected through a fixed camera. Poses are
+// authored as targets, not raw joint angles: arms say where the hand goes
+// relative to the shoulder, legs say where the ankle is on the floor, and
+// two-bone IK places elbows and knees. Feet therefore stay planted while the
+// pelvis moves, and hands land where the instructions put them.
+//
+// World axes: x toward the figure's left, y up, z out of the figure's chest.
+// Lateral values (pelvis.x, torso.side/twist, head.tilt/turn) are positive
+// toward the figure's left. Arm and leg values are side-relative, so the same
+// numbers on armL and armR give a symmetric pose.
 
-export type JointAngles = {
-  rootY?: number;   // whole-figure vertical offset (px) — rises/squats
-  torso?: number;   // pelvis→shoulder tilt (+ = lean/rotate right)
-  head?: number;    // neck+head rotation relative to torso (+ = tilt/turn right)
-  lShoulder?: number; lElbow?: number; lWrist?: number;
-  rShoulder?: number; rElbow?: number; rWrist?: number;
-  lHip?: number; lKnee?: number; lAnkle?: number;
-  rHip?: number; rKnee?: number; rAnkle?: number;
+type ArmParams = {
+  e: number;    // hand direction from the shoulder: 0 hanging down, 90 horizontal, 180 overhead
+  a: number;    // azimuth: 0 out to the side, 90 forward, 180 across the body, -90 behind
+  r: number;    // reach as a fraction of arm length (1 = straight)
+  pe: number;   // elbow pole direction, same (e, a) convention
+  pa: number;
+  he: number;   // absolute hand direction, blended in by hf
+  ha: number;
+  hf: number;   // 0 = hand continues the forearm, 1 = hand points along (he, ha)
+  pron: number; // forearm rotation: 0 thumb forward, +90 palm out/up, -90 palm in/down
+  grip: number; // 0 fingers spread, 0.7 relaxed, 1 fist
+  sy: number;   // shoulder shrug (up +)
+  sz: number;   // shoulder protraction (forward +)
 };
+
+type LegParams = {
+  x: number;     // ankle distance out from the midline
+  y: number;     // ankle height above the floor (6 = foot flat)
+  z: number;     // ankle position forward of the pelvis rest point
+  pitch: number; // foot angle: 0 flat, + toes down (heel up), - toes up
+  yaw: number;   // toe turn-out, - turns the foot inward
+  out: number;   // knee direction: 0 forward, + rotates the knee outward
+};
+
+type BodyParams = {
+  pelvis: { x: number; y: number; z: number };
+  torso: { hinge: number; flex: number; side: number; twist: number };
+  head: { nod: number; tilt: number; turn: number; z: number };
+  armL: ArmParams; armR: ArmParams;
+  legL: LegParams; legR: LegParams;
+};
+
+export type PoseTarget = { [G in keyof BodyParams]?: Partial<BodyParams[G]> };
 
 export type Pose = {
-  angles: JointAngles;
-  durationMs: number; // time (ms) this pose is "held" as the active target before advancing
+  target: PoseTarget;
+  durationMs: number; // how long this pose stays the active target before the next
 };
 
-// ─── Critically damped interpolation (Unity SmoothDamp) ──────────────────────
-// No overshoot, no oscillation — the correct alternative to CSS easing curves
-// or underdamped springs for natural-looking joint motion.
+export type Prop =
+  | { kind: 'desk'; z: number }
+  | { kind: 'ledge'; z: number }
+  | { kind: 'wall'; z: number }
+  | { kind: 'chair-front'; z: number } // a chair in front, facing away so its backrest is nearest
+  | { kind: 'doorway' };
 
-function smoothDamp(
-  current: number,
-  target: number,
-  velocity: number,
-  smoothTime: number,
-  dt: number,
-): [number, number] {
-  const d = Math.min(dt, smoothTime * 0.5);
-  const omega = 2.0 / smoothTime;
-  const x = omega * d;
-  const exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+export type Clip = {
+  poses: Pose[];
+  seated?: boolean;
+  yaw?: number;   // camera angle in degrees: 0 front, 90 right side
+  props?: Prop[];
+  shift?: number; // horizontal framing offset for wide poses
+};
+
+// ─── Pose authoring helpers ──────────────────────────────────────────────────
+
+const NEGATE: Partial<Record<keyof BodyParams, string[]>> = {
+  pelvis: ['x'],
+  torso: ['side', 'twist'],
+  head: ['tilt', 'turn'],
+};
+
+/** The same pose on the other side of the body. */
+export function mirror(t: PoseTarget): PoseTarget {
+  const out: PoseTarget = { armL: t.armR, armR: t.armL, legL: t.legR, legR: t.legL };
+  for (const g of ['pelvis', 'torso', 'head'] as const) {
+    const src = t[g] as Record<string, number> | undefined;
+    if (!src) continue;
+    const copy: Record<string, number> = { ...src };
+    for (const k of NEGATE[g] ?? []) if (k in copy) copy[k] = -copy[k];
+    (out as Record<string, unknown>)[g] = copy;
+  }
+  return out;
+}
+
+/** Shallow per-group merge, later targets win. */
+export function merge(...targets: PoseTarget[]): PoseTarget {
+  const out: Record<string, Record<string, number>> = {};
+  for (const t of targets) {
+    for (const [g, v] of Object.entries(t)) if (v) out[g] = { ...out[g], ...v };
+  }
+  return out as PoseTarget;
+}
+
+// ─── Rest poses ──────────────────────────────────────────────────────────────
+
+const ARM_REST: ArmParams = {
+  e: 7, a: -5, r: 0.97, pe: 60, pa: -90,
+  he: 0, ha: 0, hf: 0, pron: 0, grip: 0.7, sy: 0, sz: 0,
+};
+
+const STANDING: BodyParams = {
+  pelvis: { x: 0, y: 0, z: 0 },
+  torso: { hinge: 0, flex: 0, side: 0, twist: 0 },
+  head: { nod: 0, tilt: 0, turn: 0, z: 0 },
+  armL: ARM_REST, armR: ARM_REST,
+  legL: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
+  legR: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
+};
+
+const SEATED_ARM: ArmParams = { ...ARM_REST, e: 36, a: 74, r: 0.8, pe: 50, pa: -70 };
+const SEATED_LEG: LegParams = { x: 12, y: 6, z: 40, pitch: 0, yaw: 6, out: 6 };
+
+const SEATED: BodyParams = {
+  ...STANDING,
+  armL: SEATED_ARM, armR: SEATED_ARM,
+  legL: SEATED_LEG, legR: SEATED_LEG,
+};
+
+type Flat = Record<string, number>;
+
+function flatten(p: BodyParams | PoseTarget, into: Flat = {}): Flat {
+  for (const [g, v] of Object.entries(p)) {
+    for (const [k, n] of Object.entries((v ?? {}) as Record<string, number>)) into[`${g}.${k}`] = n;
+  }
+  return into;
+}
+
+function targetFlat(rest: BodyParams, t: PoseTarget): Flat {
+  return flatten(t, flatten(rest));
+}
+
+// Seconds-to-target. The trunk leads and the hands trail a little behind,
+// which gives a natural cascade without hand-tuned offsets.
+function smoothTimeFor(key: string): number {
+  if (key.startsWith('pelvis')) return 0.5;
+  if (key.startsWith('torso')) return 0.55;
+  if (key.startsWith('head')) return 0.5;
+  if (key.startsWith('leg')) return 0.48;
+  if (/\.(he|ha|hf|pron|grip)$/.test(key)) return 0.55;
+  return 0.46;
+}
+
+// Critically damped spring (Unity SmoothDamp): no overshoot, eases in and out.
+function smoothDamp(current: number, target: number, velocity: number, smoothTime: number, dt: number): [number, number] {
+  const omega = 2 / smoothTime;
+  const x = omega * dt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
   const change = current - target;
-  const temp = (velocity + omega * change) * d;
+  const temp = (velocity + omega * change) * dt;
   return [target + (change + temp) * exp, (velocity - omega * temp) * exp];
 }
 
-const REST: Required<JointAngles> = {
-  rootY: 0, torso: 0, head: 0,
-  lShoulder: -20, lElbow: 36, lWrist: -6,
-  rShoulder:  20, rElbow: -36, rWrist: 6,
-  lHip: -8, lKnee: -6, lAnkle: -18,
-  rHip:  8, rKnee: 6,  rAnkle: 18,
-};
+// ─── Vector math ─────────────────────────────────────────────────────────────
 
-// Seconds-to-target per joint. Core moves first (short); extremities trail
-// (long) — this alone produces natural cascading motion, no manual offsets.
-const SMOOTH_TIME: Record<keyof Required<JointAngles>, number> = {
-  rootY: 0.34,
-  torso: 0.32, head: 0.38,
-  lShoulder: 0.36, lElbow: 0.44, lWrist: 0.52,
-  rShoulder: 0.36, rElbow: 0.44, rWrist: 0.52,
-  lHip: 0.34, lKnee: 0.40, lAnkle: 0.46,
-  rHip: 0.34, rKnee: 0.40, rAnkle: 0.46,
-};
+type V = [number, number, number];
+type M = [V, V, V]; // rows
 
-const JOINT_KEYS = Object.keys(SMOOTH_TIME) as (keyof Required<JointAngles>)[];
+const RAD = Math.PI / 180;
+const add = (a: V, b: V): V => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a: V, b: V): V => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a: V, s: number): V => [a[0] * s, a[1] * s, a[2] * s];
+const dot = (a: V, b: V) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a: V, b: V): V => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len = (a: V) => Math.hypot(a[0], a[1], a[2]);
+const norm = (a: V): V => { const l = len(a); return l < 1e-9 ? [0, -1, 0] : mul(a, 1 / l); };
+const lerp = (a: V, b: V, t: number): V => add(a, mul(sub(b, a), t));
+
+const apply = (m: M, v: V): V => [dot(m[0], v), dot(m[1], v), dot(m[2], v)];
+const matMul = (a: M, b: M): M => {
+  const col = (j: number): V => [b[0][j], b[1][j], b[2][j]];
+  return a.map((row) => [dot(row, col(0)), dot(row, col(1)), dot(row, col(2))]) as M;
+};
+const rotX = (deg: number): M => { const c = Math.cos(deg * RAD), s = Math.sin(deg * RAD); return [[1, 0, 0], [0, c, -s], [0, s, c]]; };
+const rotY = (deg: number): M => { const c = Math.cos(deg * RAD), s = Math.sin(deg * RAD); return [[c, 0, s], [0, 1, 0], [-s, 0, c]]; };
+const rotZ = (deg: number): M => { const c = Math.cos(deg * RAD), s = Math.sin(deg * RAD); return [[c, -s, 0], [s, c, 0], [0, 0, 1]]; };
+const chain = (...ms: M[]) => ms.reduce(matMul);
+
+/** Unit direction for (e, a) on a body side (s = +1 left, -1 right). */
+const dirOf = (e: number, a: number, s: number): V => [
+  s * Math.sin(e * RAD) * Math.cos(a * RAD),
+  -Math.cos(e * RAD),
+  Math.sin(e * RAD) * Math.sin(a * RAD),
+];
+
+/** Two-bone IK. Returns the middle joint (elbow/knee) and the reached end point. */
+function solveIK(root: V, target: V, l1: number, l2: number, pole: V): [V, V] {
+  const toT = sub(target, root);
+  const u = norm(toT);
+  const d = Math.min(Math.max(len(toT), Math.abs(l1 - l2) + 0.01), l1 + l2 - 0.01);
+  const along = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - along * along));
+  let p = sub(pole, mul(u, dot(pole, u)));
+  if (len(p) < 1e-4) p = cross(u, [1, 0, 0]);
+  p = norm(p);
+  return [add(root, add(mul(u, along), mul(p, h))), add(root, mul(u, d))];
+}
+
+// ─── Body dimensions (SVG units, floor at y = 0) ─────────────────────────────
+
+const STAND_HIP = 87.8;
+const SEAT_HIP = 47;
+const HIP_W = 7;
+const LUMBAR = 22;
+const CHEST = 25;
+const SHOULDER_W = 15;
+const UPPER_ARM = 28;
+const FOREARM = 25;
+const THIGH = 42;
+const SHIN = 40;
+
+const SKIN = '#d9a07c';
+const SKIN_SHADE = '#c18663';
+const PALM = '#efc6a6';
+const HAIR = '#2f231c';
+const SHIRT = 'var(--color-primary, #d3643b)';
+const PANTS = '#3e4756';
+const SHOE = '#2a2522';
+const SHADOW = 'rgba(40, 30, 20, 0.10)';
+const PROP_TOP = '#dcd2c4';
+const PROP_FRONT = '#c7b9a8';
+const PROP_SIDE = '#b5a593';
+const PROP_LINE = '#a39380';
+
+const PITCH = 10; // camera looks slightly down so seats and desks read as surfaces
+
+// ─── Drawing primitives ──────────────────────────────────────────────────────
+
+type P2 = [number, number];
+type Prim =
+  | { k: 'line'; pts: P2[]; w: number; c: string; d: number }
+  | { k: 'circle'; at: P2; r: number; c: string; d: number }
+  | { k: 'ellipse'; at: P2; rx: number; ry: number; c: string; d: number }
+  | { k: 'poly'; pts: P2[]; c: string; d: number };
+
+type Camera = { yaw: number; shift: number };
+
+function makeProjector(cam: Camera) {
+  const cy = Math.cos(cam.yaw * RAD), sy = Math.sin(cam.yaw * RAD);
+  const cp = Math.cos(PITCH * RAD), sp = Math.sin(PITCH * RAD);
+  return (p: V): { at: P2; z: number } => {
+    const x1 = p[0] * cy + p[2] * sy;
+    const z1 = -p[0] * sy + p[2] * cy;
+    const y2 = p[1] * cp - z1 * sp;
+    const z2 = p[1] * sp + z1 * cp;
+    return { at: [x1 + cam.shift, -y2], z: z2 };
+  };
+}
+
+type Projector = ReturnType<typeof makeProjector>;
+
+function line(proj: Projector, pts: V[], w: number, c: string, bias = 0): Prim {
+  const pp = pts.map(proj);
+  return { k: 'line', pts: pp.map((p) => p.at), w, c, d: pp.reduce((s, p) => s + p.z, 0) / pp.length + bias };
+}
+
+function circle(proj: Projector, at: V, r: number, c: string, bias = 0): Prim {
+  const p = proj(at);
+  return { k: 'circle', at: p.at, r, c, d: p.z + bias };
+}
+
+/** Axis-aligned box with back faces culled and simple face shading. */
+function box(proj: Projector, cam: Camera, min: V, max: V): Prim[] {
+  const [x0, y0, z0] = min, [x1, y1, z1] = max;
+  const faces: { n: V; pts: V[]; c: string }[] = [
+    { n: [0, 1, 0], c: PROP_TOP, pts: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]] },
+    { n: [0, 0, 1], c: PROP_FRONT, pts: [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]] },
+    { n: [0, 0, -1], c: PROP_FRONT, pts: [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]] },
+    { n: [1, 0, 0], c: PROP_SIDE, pts: [[x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0]] },
+    { n: [-1, 0, 0], c: PROP_SIDE, pts: [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]] },
+  ];
+  const facing = (n: V) => {
+    const z1n = -n[0] * Math.sin(cam.yaw * RAD) + n[2] * Math.cos(cam.yaw * RAD);
+    return n[1] * Math.sin(PITCH * RAD) + z1n * Math.cos(PITCH * RAD) > 0.01;
+  };
+  return faces.filter((f) => facing(f.n)).map((f) => {
+    const pp = f.pts.map(proj);
+    return { k: 'poly' as const, pts: pp.map((p) => p.at), c: f.c, d: pp.reduce((s, p) => s + p.z, 0) / 4 };
+  });
+}
+
+// Office chair facing +z, its seat centred near z.
+function chairPrims(proj: Projector, cam: Camera, z: number): Prim[] {
+  const at = (x: number, y: number, dz: number): V => [x, y, z + dz];
+  const prims: Prim[] = [
+    ...box(proj, cam, [-19, 37, z - 15], [19, 41, z + 22]),
+    ...box(proj, cam, [-17, 56, z - 20], [17, 96, z - 16]),
+    line(proj, [at(0, 40, -15), at(0, 58, -18)], 4, PROP_LINE),
+    line(proj, [at(0, 37, 3), at(0, 9, 3)], 4.5, PROP_LINE),
+  ];
+  for (let i = 0; i < 5; i++) {
+    const ang = (90 + i * 72) * RAD;
+    const foot = at(Math.cos(ang) * 22, 4, 3 + Math.sin(ang) * 22);
+    prims.push(line(proj, [at(0, 9, 3), foot], 3.2, PROP_LINE));
+    prims.push(circle(proj, [foot[0], 2.4, foot[2]], 2.4, PROP_LINE));
+  }
+  return prims;
+}
+
+function propPrims(proj: Projector, cam: Camera, prop: Prop): Prim[] {
+  switch (prop.kind) {
+    case 'desk': {
+      const z0 = prop.z, z1 = prop.z + 42;
+      const legs: V[] = [[-42, 0, z0 + 3], [42, 0, z0 + 3], [-42, 0, z1 - 3], [42, 0, z1 - 3]];
+      return [
+        ...legs.map((p) => line(proj, [p, [p[0], 70, p[2]]], 3.5, PROP_LINE)),
+        ...box(proj, cam, [-46, 70, z0], [46, 74, z1]),
+      ];
+    }
+    case 'ledge':
+      return box(proj, cam, [-18, 0, prop.z], [18, 46, prop.z + 30]);
+    case 'wall':
+      return box(proj, cam, [-70, 0, prop.z], [70, 176, prop.z + 6]);
+    case 'chair-front':
+      return chairPrims(proj, cam, prop.z);
+    case 'doorway':
+      return [
+        ...box(proj, cam, [-45, 0, -10], [-38, 186, 2]),
+        ...box(proj, cam, [38, 0, -10], [45, 186, 2]),
+        ...box(proj, cam, [-45, 186, -10], [45, 193, 2]),
+      ];
+  }
+}
+
+// ─── Skeleton → primitives ───────────────────────────────────────────────────
+
+function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Prim[] {
+  const g = (k: string) => f[k];
+  const prims: Prim[] = [];
+
+  const P: V = [g('pelvis.x'), (seated ? SEAT_HIP : STAND_HIP) + g('pelvis.y'), g('pelvis.z')];
+  const hinge = rotX(g('torso.hinge'));
+  const twist = g('torso.twist'), side = g('torso.side'), flex = g('torso.flex');
+  const R1 = chain(hinge, rotY(twist * 0.4), rotZ(-side * 0.5), rotX(flex * 0.5));
+  const R2 = chain(hinge, rotY(twist), rotZ(-side), rotX(flex));
+
+  const M = add(P, apply(R1, [0, LUMBAR, 0]));
+  const C = add(M, apply(R2, [0, CHEST, 0])); // neck base
+
+  // Trunk: pants block at the hips, shirt over a curved spine, then waist and
+  // chest bars that give the front view its taper and collapse in side view.
+  prims.push(line(proj, [add(P, [-HIP_W, 0, 0]), add(P, [HIP_W, 0, 0])], 16, PANTS, -3.5));
+  prims.push(line(proj, [add(P, apply(hinge, [0, 8, 0])), M, add(C, apply(R2, [0, -7, 0]))], 24, SHIRT, -4));
+  prims.push(line(proj, [add(M, apply(R1, [-5, 0, 0])), add(M, apply(R1, [5, 0, 0]))], 18, SHIRT, -3.9));
+  const chestMid = add(C, apply(R2, [0, -10, 0]));
+  prims.push(line(proj, [add(chestMid, apply(R2, [-8, 0, 0])), add(chestMid, apply(R2, [8, 0, 0]))], 17, SHIRT, -3.8));
+
+  const shoulder = (s: number, arm: string): V =>
+    add(C, apply(R2, [s * SHOULDER_W, -3 + g(`${arm}.sy`), g(`${arm}.sz`)]));
+  const SL = shoulder(1, 'armL'), SR = shoulder(-1, 'armR');
+  prims.push(line(proj, [SL, SR], 12, SHIRT, -3));
+
+  // Head: neck, then a hair disc behind a slightly smaller face disc. Turning
+  // the head slides the face toward the look direction and shows hair behind.
+  const Rh = chain(R2, rotY(g('head.turn')), rotZ(-g('head.tilt')), rotX(g('head.nod')));
+  const neckTop = add(add(C, apply(R2, [0, 0, g('head.z')])), apply(Rh, [0, 6, 0]));
+  const Hc = add(neckTop, apply(Rh, [0, 11, 1]));
+  prims.push(line(proj, [add(C, apply(R2, [0, -2, 0])), neckTop], 8.5, SKIN, -1));
+  const faceC = add(Hc, apply(Rh, [0, -1.2, 2]));
+  const face = circle(proj, faceC, 11.4, SKIN);
+  const faceD = face.d;
+  // Hair sits behind the face unless the head is turned away from the camera.
+  const awayFromCamera = proj(add(faceC, apply(Rh, [0, 0, 1]))).z - proj(faceC).z < -0.3;
+  const hair = circle(proj, add(Hc, apply(Rh, [0, 2.2, -2.4])), 13, HAIR);
+  prims.push({ ...hair, d: faceD + (awayFromCamera ? 0.01 : -0.01) }, face);
+  const facing = (local: V) => {
+    const p = add(Hc, apply(Rh, local));
+    const n = norm(sub(p, faceC));
+    return proj(add(faceC, n)).z - proj(faceC).z;
+  };
+  for (const s of [1, -1]) {
+    const local: V = [s * 4.2, 0.6, 10.3];
+    if (facing(local) > 0.2) {
+      const p = proj(add(Hc, apply(Rh, local)));
+      prims.push({ k: 'ellipse', at: p.at, rx: 1.5, ry: Math.max(0.25, 1.6 * (1 - blink)), c: HAIR, d: faceD + 0.5 });
+    }
+  }
+  if (facing([0, -4.6, 10.6]) > 0.35) {
+    const mouth = line(proj, [add(Hc, apply(Rh, [-1.8, -4.8, 10.4])), add(Hc, apply(Rh, [1.8, -4.8, 10.4]))], 1.3, SKIN_SHADE);
+    prims.push({ ...mouth, d: faceD + 0.5 });
+  }
+
+  // Arms
+  const chestFwd = apply(R2, [0, 0, 1]);
+  const chestUp = apply(R2, [0, 1, 0]);
+  for (const [s, arm, S] of [[1, 'armL', SL], [-1, 'armR', SR]] as const) {
+    const reach = (UPPER_ARM + FOREARM) * g(`${arm}.r`);
+    const T = add(S, mul(apply(R2, dirOf(g(`${arm}.e`), g(`${arm}.a`), s)), reach));
+    const pole = apply(R2, dirOf(g(`${arm}.pe`), g(`${arm}.pa`), s));
+    const [E, W] = solveIK(S, T, UPPER_ARM, FOREARM, pole);
+
+    prims.push(line(proj, [S, E], 8.5, SKIN));
+    prims.push(line(proj, [S, lerp(S, E, 0.55)], 10.5, SHIRT, 0.05));
+    prims.push(line(proj, [E, W], 7.5, SKIN));
+
+    const follow = norm(sub(W, E));
+    const absolute = apply(R2, dirOf(g(`${arm}.he`), g(`${arm}.ha`), s));
+    const hd = norm(lerp(follow, absolute, g(`${arm}.hf`)));
+    let b0 = sub(chestFwd, mul(hd, dot(chestFwd, hd)));
+    if (len(b0) < 0.2) b0 = sub(chestUp, mul(hd, dot(chestUp, hd)));
+    b0 = norm(b0);
+    const b1 = mul(cross(b0, hd), s);
+    const pron = g(`${arm}.pron`) * RAD;
+    const thumbDir = add(mul(b0, Math.cos(pron)), mul(b1, Math.sin(pron)));
+
+    const grip = g(`${arm}.grip`);
+    const palmLen = 2 + 4.5 * (1 - grip);
+    const base = add(W, mul(hd, 1.5));
+    const tip = add(base, mul(hd, palmLen));
+    // The palm is lighter than the back of the hand, which makes forearm rotation read.
+    const palmN = mul(cross(thumbDir, hd), -s);
+    const palmShows = proj(add(base, palmN)).z - proj(base).z > 0.15;
+    const palm = line(proj, [base, tip], 8, palmShows ? PALM : SKIN, 0.1);
+    prims.push(palm);
+    prims.push(circle(proj, add(add(W, mul(hd, 2.5)), mul(thumbDir, 3.8)), 2.1, SKIN));
+
+    // Spread fingers fan out in screen space from the end of the palm.
+    const spread = Math.max(0, 1 - grip / 0.4);
+    if (spread > 0.02) {
+      const a2 = proj(base).at, b2 = proj(tip).at;
+      const dx = b2[0] - a2[0], dy = b2[1] - a2[1];
+      const base2 = Math.atan2(dy, dx);
+      for (const k of [-1.5, -0.5, 0.5, 1.5]) {
+        const ang = base2 + k * 17 * spread * RAD;
+        const l = 7 * spread;
+        prims.push({
+          k: 'line', w: 2.4, c: palm.c, d: palm.d + 0.01,
+          pts: [b2, [b2[0] + Math.cos(ang) * l, b2[1] + Math.sin(ang) * l]],
+        });
+      }
+    }
+  }
+
+  // Legs: ankles live in world space so planted feet stay put.
+  for (const [s, leg] of [[1, 'legL'], [-1, 'legR']] as const) {
+    const H = add(P, [s * HIP_W, 0, 0]);
+    const A: V = [s * g(`${leg}.x`), g(`${leg}.y`), g(`${leg}.z`)];
+    const out = g(`${leg}.out`) * RAD;
+    const [K, Ar] = solveIK(H, A, THIGH, SHIN, norm([s * Math.sin(out), 0.25, Math.cos(out)]));
+    prims.push(line(proj, [H, K], 13, PANTS));
+    prims.push(line(proj, [K, Ar], 11, PANTS));
+
+    const pitch = g(`${leg}.pitch`) * RAD, yaw = g(`${leg}.yaw`) * RAD;
+    const fd: V = [s * Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
+    const sole = add(Ar, [0, -2.5, 0]);
+    prims.push(line(proj, [sub(sole, mul(fd, 2.5)), add(sole, mul(fd, 10))], 7.5, SHOE, 0.05));
+  }
+
+  return prims;
+}
+
+function render(f: Flat, clip: Clip, blink: number): Prim[] {
+  const cam: Camera = { yaw: clip.yaw ?? 0, shift: clip.shift ?? 0 };
+  const proj = makeProjector(cam);
+  const bySortedDepth = (a: Prim, b: Prim) => a.d - b.d;
+
+  const shadowAt = proj([f['pelvis.x'], 0, f['pelvis.z'] + (clip.seated ? 20 : 0)]);
+  const shadow: Prim = { k: 'ellipse', at: shadowAt.at, rx: 36, ry: 36 * Math.sin(PITCH * RAD), c: SHADOW, d: 0 };
+
+  const props: Prim[] = [];
+  if (clip.seated) props.push(...chairPrims(proj, cam, 0));
+  for (const p of clip.props ?? []) props.push(...propPrims(proj, cam, p));
+
+  return [
+    shadow,
+    ...props.sort(bySortedDepth),
+    ...buildBody(f, !!clip.seated, proj, blink).sort(bySortedDepth),
+  ];
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface Props {
-  poses: Pose[];
-  seated?: boolean;
-  /** Render the neutral rest pose with no motion at all — used for cognitive exercises. */
+  clip: Clip;
+  /** Show the first pose (or rest) with no motion at all, e.g. for cognitive exercises. */
   static?: boolean;
 }
 
-export function FigureRig({ poses, seated, static: isStatic }: Props) {
-  const rootRef      = useRef<SVGGElement>(null);
-  const torsoRef      = useRef<SVGGElement>(null);
-  const headRef      = useRef<SVGGElement>(null);
-  const shoulderLRef = useRef<SVGGElement>(null);
-  const elbowLRef    = useRef<SVGGElement>(null);
-  const wristLRef    = useRef<SVGGElement>(null);
-  const shoulderRRef = useRef<SVGGElement>(null);
-  const elbowRRef    = useRef<SVGGElement>(null);
-  const wristRRef    = useRef<SVGGElement>(null);
-  const hipLRef      = useRef<SVGGElement>(null);
-  const kneeLRef     = useRef<SVGGElement>(null);
-  const ankleLRef    = useRef<SVGGElement>(null);
-  const hipRRef      = useRef<SVGGElement>(null);
-  const kneeRRef     = useRef<SVGGElement>(null);
-  const ankleRRef    = useRef<SVGGElement>(null);
+export function FigureRig({ clip, static: isStatic }: Props) {
+  const rest = clip.seated ? SEATED : STANDING;
+  const [prims, setPrims] = useState<Prim[]>(() =>
+    render(targetFlat(rest, clip.poses[0]?.target ?? {}), clip, 0),
+  );
 
   useEffect(() => {
-    if (isStatic) return; // frozen at REST — set once below, no rAF loop
-    if (!poses.length) return;
-    const total = poses.reduce((s, p) => s + p.durationMs, 0);
-    if (total <= 0) return;
+    const restPose = clip.seated ? SEATED : STANDING;
+    const targets = clip.poses.map((p) => targetFlat(restPose, p.target));
+    const total = clip.poses.reduce((s, p) => s + p.durationMs, 0);
+    if (isStatic || total <= 0) {
+      setPrims(render(targets[0] ?? flatten(restPose), clip, 0));
+      return;
+    }
 
-    // Per-joint { pos, vel } state — persists across frames, drives smoothDamp
     const state: Record<string, { pos: number; vel: number }> = {};
-    for (const k of JOINT_KEYS) state[k] = { pos: REST[k], vel: 0 };
+    for (const [k, v] of Object.entries(flatten(restPose))) state[k] = { pos: v, vel: 0 };
 
     let rafId: number;
-    let prevNow: number | null = null;
+    let prev: number | null = null;
     let t0: number | null = null;
 
-    const setRot = (el: SVGGElement | null, deg: number) =>
-      el?.setAttribute('transform', `rotate(${deg.toFixed(3)})`);
-    const setTransY = (el: SVGGElement | null, px: number) =>
-      el?.setAttribute('transform', `translate(0,${px.toFixed(3)})`);
-
     function frame(now: number) {
-      if (!t0) t0 = now;
-      if (prevNow === null) prevNow = now;
-      const dt = Math.min((now - prevNow) / 1000, 0.05);
-      prevNow = now;
+      t0 ??= now;
+      const dt = Math.min((now - (prev ?? now)) / 1000, 0.05);
+      prev = now;
 
-      const ct = ((now - t0) % total) / total; // normalised cycle position [0,1)
+      let t = (now - t0) % total;
+      let i = 0;
+      while (t >= clip.poses[i].durationMs) t -= clip.poses[i++].durationMs;
+      const target = targets[i];
 
-      // Find the pose whose window contains ct — its angles are this instant's target
-      let acc = 0;
-      let target: Required<JointAngles> = { ...REST, ...poses[0].angles };
-      for (let i = 0; i < poses.length; i++) {
-        const frac = poses[i].durationMs / total;
-        if (ct < acc + frac) {
-          target = { ...REST, ...poses[i].angles };
-          break;
-        }
-        acc += frac;
-      }
-
-      // Barely-perceptible idle breathing so the figure is never frozen at rest
-      const breathTorso = Math.sin(now * 0.001) * 0.35;
-      const breathHead  = Math.sin(now * 0.0013 + 0.7) * 0.25;
-
-      for (const k of JOINT_KEYS) {
+      for (const k in state) {
         const s = state[k];
-        let t = target[k];
-        if (k === 'torso') t += breathTorso;
-        if (k === 'head')  t += breathHead;
-        const [p, v] = smoothDamp(s.pos, t, s.vel, SMOOTH_TIME[k], dt);
-        s.pos = p;
-        s.vel = v;
+        [s.pos, s.vel] = smoothDamp(s.pos, target[k], s.vel, smoothTimeFor(k), dt);
       }
 
-      setTransY(rootRef.current, state.rootY.pos);
-      setRot(torsoRef.current,     state.torso.pos);
-      setRot(headRef.current,      state.head.pos);
-      setRot(shoulderLRef.current, state.lShoulder.pos);
-      setRot(elbowLRef.current,    state.lElbow.pos);
-      setRot(wristLRef.current,    state.lWrist.pos);
-      setRot(shoulderRRef.current, state.rShoulder.pos);
-      setRot(elbowRRef.current,    state.rElbow.pos);
-      setRot(wristRRef.current,    state.rWrist.pos);
-      setRot(hipLRef.current,      state.lHip.pos);
-      setRot(kneeLRef.current,     state.lKnee.pos);
-      setRot(ankleLRef.current,    state.lAnkle.pos);
-      setRot(hipRRef.current,      state.rHip.pos);
-      setRot(kneeRRef.current,     state.rKnee.pos);
-      setRot(ankleRRef.current,    state.rAnkle.pos);
+      // Breathing and a slow weight shift layered on top so the figure never freezes.
+      const breath = Math.sin((now / 4200) * Math.PI * 2);
+      const f: Flat = {};
+      for (const k in state) f[k] = state[k].pos;
+      f['torso.flex'] -= breath * 1.1;
+      f['armL.sy'] += breath * 0.7;
+      f['armR.sy'] += breath * 0.7;
+      if (!clip.seated) f['pelvis.x'] += Math.sin((now / 6100) * Math.PI * 2) * 0.8;
+      // A foot travelling along the floor lifts, so repositioning reads as a step, not a slide.
+      for (const leg of ['legL', 'legR']) {
+        const speed = Math.hypot(state[`${leg}.x`].vel, state[`${leg}.z`].vel);
+        f[`${leg}.y`] += Math.min(8, speed * 0.15);
+      }
 
+      const phase = (now % 4300) / 4300;
+      const blink = phase < 0.04 ? Math.sin((phase / 0.04) * Math.PI) : 0;
+
+      setPrims(render(f, clip, blink));
       rafId = requestAnimationFrame(frame);
     }
 
     rafId = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafId);
-  }, [poses, isStatic]);
-
-  // ─── Visual constants ────────────────────────────────────────────────────
-  const BONE = '#3a332d';  // dark warm charcoal — limb lines
-  const JT   = '#9a8e82';  // muted warm gray — joint dots, chair
-
-  // Bone lengths (px in SVG units)
-  const NECK    = 8;
-  const HEAD_R  = 20;
-  const UA      = 46;  // upper arm — reaches down to roughly hip height
-  const FA      = 40;  // forearm — bends back in toward centerline
-  const HAND    = 8;
-  const THIGH   = 50;
-  const SHIN    = 44;
-  const FOOT    = 13;
-
-  const rot = (deg: number) => `rotate(${deg})`;
-
-  // ─── SVG hierarchy — kinematic chain, legs mirrored via scale(-1,1) ─────
-  //
-  // No separate spine/collarbone bone is drawn: arms hang directly from the
-  // neck point and their shoulder→elbow→wrist bend forms the torso's visual
-  // silhouette (matching the reference figure). Legs mirror via scale(side,1)
-  // so one positive hip angle spreads both legs outward symmetrically.
-
-  const Leg = ({
-    side, hipRef, kneeRef, ankleRef,
-  }: {
-    side: 1 | -1;
-    hipRef: React.RefObject<SVGGElement | null>;
-    kneeRef: React.RefObject<SVGGElement | null>;
-    ankleRef: React.RefObject<SVGGElement | null>;
-  }) => (
-    <g transform={`translate(${side * 9}, 0)`}>
-      <circle r={4} fill={JT} />
-      <g transform={`scale(${side}, 1)`}>
-        <g ref={hipRef} transform={rot(REST[side === -1 ? 'lHip' : 'rHip'])}>
-          <line y2={THIGH} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
-          <g transform={`translate(0,${THIGH})`}>
-            <circle r={3.2} fill={JT} />
-            <g ref={kneeRef} transform={rot(REST[side === -1 ? 'lKnee' : 'rKnee'])}>
-              <line y2={SHIN} stroke={BONE} strokeWidth={2.7} strokeLinecap="round" />
-              <g transform={`translate(0,${SHIN})`}>
-                <circle r={2.4} fill={JT} />
-                <g ref={ankleRef} transform={rot(REST[side === -1 ? 'lAnkle' : 'rAnkle'])}>
-                  <line x2={FOOT} y2={2} stroke={BONE} strokeWidth={2.2} strokeLinecap="round" />
-                  <circle cx={FOOT} cy={2} r={1.6} fill={JT} />
-                </g>
-              </g>
-            </g>
-          </g>
-        </g>
-      </g>
-    </g>
-  );
-
-  const Arm = ({
-    side, shoulderRef, elbowRef, wristRef,
-  }: {
-    side: 1 | -1;
-    shoulderRef: React.RefObject<SVGGElement | null>;
-    elbowRef: React.RefObject<SVGGElement | null>;
-    wristRef: React.RefObject<SVGGElement | null>;
-  }) => (
-    <g transform={`translate(${side * 3}, 0)`}>
-      <g ref={shoulderRef} transform={rot(REST[side === -1 ? 'lShoulder' : 'rShoulder'])}>
-        <line y2={UA} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
-        <g transform={`translate(0,${UA})`}>
-          <circle r={3} fill={JT} />
-          <g ref={elbowRef} transform={rot(REST[side === -1 ? 'lElbow' : 'rElbow'])}>
-            <line y2={FA} stroke={BONE} strokeWidth={2.6} strokeLinecap="round" />
-            <g transform={`translate(0,${FA})`}>
-              <circle r={2.6} fill={JT} />
-              <g ref={wristRef} transform={rot(REST[side === -1 ? 'lWrist' : 'rWrist'])}>
-                <line y2={HAND} stroke={BONE} strokeWidth={1.9} strokeLinecap="round" />
-              </g>
-            </g>
-          </g>
-        </g>
-      </g>
-    </g>
-  );
+  }, [clip, isStatic]);
 
   return (
-    <svg
-      viewBox="0 0 200 280"
-      width="150"
-      height="210"
-      aria-hidden="true"
-      style={{ overflow: 'visible' }}
-    >
-      {/* Office chair — drawn behind the figure at low opacity */}
-      {seated && (
-        <g opacity={0.32}>
-          {/* seat cushion */}
-          <rect x={63} y={172} width={74} height={9} rx={4} fill={JT} opacity={0.55} />
-          {/* curved backrest */}
-          <path
-            d="M 70,172 Q 67,132 78,108 Q 85,92 100,90 Q 115,92 122,108 Q 133,132 130,172"
-            fill="none" stroke={JT} strokeWidth={4} strokeLinecap="round"
-          />
-          <path
-            d="M 75,170 Q 73,132 82,111 Q 88,98 100,96 Q 112,98 118,111 Q 127,132 125,170 Z"
-            fill={JT} opacity={0.12}
-          />
-          {/* armrests */}
-          <line x1={63} y1={158} x2={48} y2={158} stroke={JT} strokeWidth={2.5} strokeLinecap="round" />
-          <line x1={137} y1={158} x2={152} y2={158} stroke={JT} strokeWidth={2.5} strokeLinecap="round" />
-          <line x1={63} y1={158} x2={63} y2={172} stroke={JT} strokeWidth={2} strokeLinecap="round" />
-          <line x1={137} y1={158} x2={137} y2={172} stroke={JT} strokeWidth={2} strokeLinecap="round" />
-          {/* central column */}
-          <line x1={100} y1={181} x2={100} y2={210} stroke={JT} strokeWidth={3} strokeLinecap="round" />
-          {/* star base + casters */}
-          {[-28, -14, 0, 14, 28].map((dx) => (
-            <g key={dx}>
-              <line
-                x1={100} y1={210} x2={100 + dx} y2={216 + Math.abs(dx) * 0.08}
-                stroke={JT} strokeWidth={2.2} strokeLinecap="round"
+    <svg viewBox="-100 -192 200 210" width="200" height="210" aria-hidden="true" style={{ overflow: 'visible' }}>
+      {prims.map((p, i) => {
+        switch (p.k) {
+          case 'line':
+            return (
+              <polyline
+                key={i}
+                points={p.pts.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' ')}
+                style={{ fill: 'none', stroke: p.c }}
+                strokeWidth={p.w}
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              <circle cx={100 + dx} cy={217 + Math.abs(dx) * 0.08} r={2} fill={JT} />
-            </g>
-          ))}
-        </g>
-      )}
-
-      {/* Whole-figure vertical offset (calf raises, squats) */}
-      <g ref={rootRef}>
-        {/* Pelvis anchor */}
-        <g transform="translate(100, 178)">
-
-          <Leg side={-1} hipRef={hipLRef} kneeRef={kneeLRef} ankleRef={ankleLRef} />
-          <Leg side={1}  hipRef={hipRRef} kneeRef={kneeRRef} ankleRef={ankleRRef} />
-
-          {/* Torso — rotates the whole upper body around the pelvis. No drawn
-              spine bone: arms hang from the neck point and their own bend
-              implies the torso silhouette. */}
-          <g ref={torsoRef} transform={rot(REST.torso)}>
-            <g transform={`translate(0,${-72})`}>
-              <Arm side={-1} shoulderRef={shoulderLRef} elbowRef={elbowLRef} wristRef={wristLRef} />
-              <Arm side={1}  shoulderRef={shoulderRRef} elbowRef={elbowRRef} wristRef={wristRRef} />
-
-              {/* Neck + head with face — single joint drives the sub-chain */}
-              <g ref={headRef} transform={rot(REST.head)}>
-                <line y2={-NECK} stroke={BONE} strokeWidth={3} strokeLinecap="round" />
-                <circle r={3} fill={JT} />
-                <g transform={`translate(0,${-NECK})`}>
-                  <circle cy={-HEAD_R} r={HEAD_R} fill="none" stroke={BONE} strokeWidth={3} />
-                  <circle cx={-6} cy={-HEAD_R - 3} r={1.6} fill={BONE} />
-                  <circle cx={6}  cy={-HEAD_R - 3} r={1.6} fill={BONE} />
-                  <path
-                    d={`M -5,${-HEAD_R + 6} Q 0,${-HEAD_R + 10} 5,${-HEAD_R + 6}`}
-                    fill="none" stroke={BONE} strokeWidth={1.6} strokeLinecap="round"
-                  />
-                </g>
-              </g>
-            </g>
-          </g>
-
-        </g>
-      </g>
+            );
+          case 'circle':
+            return <circle key={i} cx={p.at[0]} cy={p.at[1]} r={p.r} style={{ fill: p.c }} />;
+          case 'ellipse':
+            return <ellipse key={i} cx={p.at[0]} cy={p.at[1]} rx={p.rx} ry={p.ry} style={{ fill: p.c }} />;
+          case 'poly':
+            return (
+              <polygon
+                key={i}
+                points={p.pts.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' ')}
+                style={{ fill: p.c, stroke: p.c }}
+                strokeWidth={0.8}
+                strokeLinejoin="round"
+              />
+            );
+        }
+      })}
     </svg>
   );
 }
