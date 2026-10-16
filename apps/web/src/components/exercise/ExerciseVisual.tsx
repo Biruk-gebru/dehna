@@ -47,7 +47,7 @@ const NECK_SIDE_TILT: Clip = {
 
 const NECK_ROTATION: Clip = {
   seated: true, yaw: 12,
-  poses: alternate({ head: { turn: -62 } }, 2000, 900),
+  poses: alternate({ head: { turn: -62 }, face: { gx: -0.8 } }, 2000, 900),
 };
 
 const NECK_CHIN_TUCK: Clip = {
@@ -73,6 +73,7 @@ const NECK_LEVATOR_SCAP: Clip = {
   seated: true, yaw: 20,
   poses: alternate({
     head: { nod: 26, turn: 24, tilt: 8 },
+    face: { gx: 0.5, gy: -1 },
     armR: { e: 150, a: -160, r: 0.58, pe: 115, pa: 30, hf: 0.5, he: 170, ha: 180, pron: -90 },
   }, 2400, 1100),
 };
@@ -112,7 +113,7 @@ const CROSS_BODY: Clip = {
 
 // Hands meet just in front of the head. Aiming slightly forward (a < 180) also
 // makes the arms rise in front of the body instead of sweeping across the face.
-const ARMS_UP = both({ e: 162, a: 122, r: 0.98, pe: 90, pa: 0, grip: 0.9 });
+const ARMS_UP = merge(both({ e: 162, a: 122, r: 0.98, pe: 90, pa: 0, grip: 0.9 }), { face: { gy: 0.8 } });
 const OVERHEAD_REACH: Clip = {
   yaw: 0,
   poses: [
@@ -150,9 +151,9 @@ const THORACIC_ROTATION: Clip = {
   seated: true, yaw: 10,
   poses: [
     { target: ARMS_CROSSED, durationMs: 700 },
-    { target: merge(ARMS_CROSSED, EFFORT, { torso: { twist: -42 }, head: { turn: -14 } }), durationMs: 1900 },
+    { target: merge(ARMS_CROSSED, EFFORT, { torso: { twist: -42 }, head: { turn: -14 }, face: { gx: -0.6 } }), durationMs: 1900 },
     { target: merge(ARMS_CROSSED, RELIEF), durationMs: 700 },
-    { target: merge(ARMS_CROSSED, EFFORT, { torso: { twist: 42 }, head: { turn: 14 } }), durationMs: 1900 },
+    { target: merge(ARMS_CROSSED, EFFORT, { torso: { twist: 42 }, head: { turn: 14 }, face: { gx: 0.6 } }), durationMs: 1900 },
   ],
 };
 
@@ -172,6 +173,7 @@ const SPINAL_TWIST: Clip = {
   poses: alternate({
     torso: { twist: 42 },
     head: { turn: 25 },
+    face: { gx: 0.7 },
     armR: { e: 42, a: 88, r: 1 },
     armL: { e: 40, a: 13, r: 0.55, pe: 70, pa: -90 },
   }, 2400, 1100),
@@ -181,7 +183,7 @@ const HANDS_LOW_BACK = both({ e: 23, a: -122, r: 0.7, pe: 80, pa: -50, hf: 0.7, 
 const BACK_EXTENSION: Clip = {
   yaw: 75,
   poses: [
-    { target: merge(HANDS_LOW_BACK, EFFORT, { torso: { flex: -20, hinge: -6 }, head: { nod: -16 }, pelvis: { z: 3 } }), durationMs: 2200 },
+    { target: merge(HANDS_LOW_BACK, EFFORT, { torso: { flex: -20, hinge: -6 }, head: { nod: -16 }, pelvis: { z: 3 }, face: { gy: 0.9 } }), durationMs: 2200 },
     { target: merge(HANDS_LOW_BACK, RELIEF), durationMs: 1500 },
   ],
 };
@@ -206,7 +208,7 @@ const FORWARD_FOLD: Clip = {
 // ── Wrists / Elbows ───────────────────────────────────────────────────────────
 
 const ARMS_FORWARD = { e: 84, a: 86, r: 0.97, pe: 90, pa: 0, hf: 1, grip: 0.8 };
-const wrist = (he: number, ha: number) => both({ ...ARMS_FORWARD, he, ha });
+const wrist = (he: number, ha: number) => merge(both({ ...ARMS_FORWARD, he, ha }), { face: { gy: -0.3 } });
 const W_UP = wrist(126, 86), W_OUT = wrist(84, 44), W_DOWN = wrist(42, 86), W_IN = wrist(84, 128);
 const WRIST_CIRCLES: Clip = {
   seated: true, yaw: 35,
@@ -320,6 +322,7 @@ const HAMSTRING_DESK: Clip = {
   yaw: 80, shift: -20, props: [{ kind: 'ledge', z: 52 }],
   poses: alternate({
     torso: { hinge: 22 },
+    face: { gy: -0.7 },
     legR: { x: 9, y: 50, z: 66, pitch: -55, out: 0 },
     ...both({ e: 40, a: 85, r: 0.95 }),
   }, 2600, 1100),

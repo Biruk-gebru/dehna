@@ -45,6 +45,8 @@ type FaceParams = {
   smile: number; // -1 pressed lips .. 0 neutral .. 1 smile
   open: number;  // 0..1 mouth opening, e.g. a slow exhale
   lids: number;  // 0 open .. 1 closed
+  gx: number;    // gaze, -1..1: + toward the figure's left
+  gy: number;    // gaze, -1..1: + up
 };
 
 type BodyParams = {
@@ -84,12 +86,13 @@ const NEGATE: Partial<Record<keyof BodyParams, string[]>> = {
   pelvis: ['x'],
   torso: ['side', 'twist'],
   head: ['tilt', 'turn'],
+  face: ['gx'],
 };
 
 /** The same pose on the other side of the body. */
 export function mirror(t: PoseTarget): PoseTarget {
   const out: PoseTarget = { armL: t.armR, armR: t.armL, legL: t.legR, legR: t.legL };
-  for (const g of ['pelvis', 'torso', 'head'] as const) {
+  for (const g of ['pelvis', 'torso', 'head', 'face'] as const) {
     const src = t[g] as Record<string, number> | undefined;
     if (!src) continue;
     const copy: Record<string, number> = { ...src };
@@ -119,7 +122,7 @@ const STANDING: BodyParams = {
   pelvis: { x: 0, y: 0, z: 0 },
   torso: { hinge: 0, flex: 0, side: 0, twist: 0 },
   head: { nod: 0, tilt: 0, turn: 0, z: 0 },
-  face: { brow: 0, pinch: 0, smile: 0.3, open: 0, lids: 0.1 },
+  face: { brow: 0, pinch: 0, smile: 0.3, open: 0, lids: 0.1, gx: 0, gy: 0 },
   armL: ARM_REST, armR: ARM_REST,
   legL: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
   legR: { x: 10, y: 6, z: 0, pitch: 0, yaw: 8, out: 4 },
@@ -400,12 +403,13 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
   const brow = g('face.brow'), pinch = g('face.pinch'), smile = g('face.smile');
   const closed = Math.max(blink, g('face.lids'));
 
+  const gx = g('face.gx') * 1.3, gy = g('face.gy') * 1.1;
   for (const s of [1, -1]) {
-    const eye: V = [s * 4.2, 0.6, 10.3];
+    const eye: V = [s * 4.2 + gx, 0.6 + gy, 10.3];
     if (facing(eye) <= 0.2) continue;
     if (closed > 0.75) {
       // Closed lids curve down slightly, like a relaxed sleeping eye
-      prims.push({ k: 'curve', from: at([eye[0] - 1.6, 0.6, 10.2]), ctrl: at([eye[0], -0.4, 10.4]), to: at([eye[0] + 1.6, 0.6, 10.2]), w: 1.1, c: HAIR, d: onFace });
+      prims.push({ k: 'curve', from: at([s * 4.2 - 1.6, 0.6, 10.2]), ctrl: at([s * 4.2, -0.4, 10.4]), to: at([s * 4.2 + 1.6, 0.6, 10.2]), w: 1.1, c: HAIR, d: onFace });
     } else {
       prims.push({ k: 'ellipse', at: at(eye), rx: 1.5, ry: Math.max(0.3, 1.6 * (1 - closed)), c: HAIR, d: onFace });
     }
@@ -545,6 +549,9 @@ export function FigureRig({ clip, static: isStatic }: Props) {
     let rafId: number;
     let prev: number | null = null;
     let t0: number | null = null;
+    let nextBlinkAt: number | null = null;
+    let blinkAt = -1e9;
+    let doubleBlink = false;
 
     function frame(now: number) {
       t0 ??= now;
@@ -581,12 +588,22 @@ export function FigureRig({ clip, static: isStatic }: Props) {
         const w = Math.sin((sinceStart / 1800) * Math.PI);
         const toCamera = Math.max(-55, Math.min(55, -(clip.yaw ?? 0) - f['torso.twist']));
         f['head.turn'] += (toCamera - f['head.turn']) * w * 0.8;
+        // The eyes cover whatever the head turn leaves
+        f['face.gx'] += (Math.max(-1, Math.min(1, (toCamera - f['head.turn']) / 30)) - f['face.gx']) * w;
+        f['face.gy'] += (0 - f['face.gy']) * w;
         f['face.smile'] += (0.9 - f['face.smile']) * w;
         f['face.brow'] += (0.5 - f['face.brow']) * w;
       }
 
-      const phase = (now % 4300) / 4300;
-      const blink = phase < 0.04 ? Math.sin((phase / 0.04) * Math.PI) : 0;
+      // Blinks on an irregular rhythm, now and then a double blink
+      nextBlinkAt ??= now + 1200;
+      if (now >= nextBlinkAt) {
+        blinkAt = now;
+        doubleBlink = Math.random() < 0.2;
+        nextBlinkAt = now + 2400 + Math.random() * 3600;
+      }
+      const lidPulse = (x: number) => (x >= 0 && x < 170 ? Math.sin((x / 170) * Math.PI) : 0);
+      const blink = lidPulse(now - blinkAt) + (doubleBlink ? lidPulse(now - blinkAt - 280) : 0);
 
       setPrims(render(f, clip, blink));
       rafId = requestAnimationFrame(frame);
