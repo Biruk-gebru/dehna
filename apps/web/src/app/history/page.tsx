@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import type { WorkSession } from '@/types';
+import { SitStandChart } from '@/components/history/SitStandChart';
 
 function fmt(minutes: number) {
   if (minutes < 60) return `${minutes}m`;
@@ -161,6 +162,8 @@ export default function HistoryPage() {
           <div style={labelStyle}>streak</div>
         </div>
       </div>
+
+      <SitStandChart sessions={sessions} standingMinutes={standingMinutes} />
 
       {loading && (
         <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>Loading…</p>
