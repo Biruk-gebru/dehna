@@ -18,10 +18,32 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ['400', '500'],
 });
 
+const DESCRIPTION = 'A desk buddy who gets you moving: a focus timer with short guided stretches for your neck, back, wrists and eyes. Free, no sign-up.';
+
+// On Vercel this resolves to the production domain; locally it's the dev server.
+const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : 'http://localhost:3000';
+
 export const metadata: Metadata = {
-  title: 'Dehna',
-  description: 'Desk worker wellness breaks, tailored to how you feel.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: 'Dehna: a desk buddy who gets you moving', template: '%s · Dehna' },
+  description: DESCRIPTION,
+  applicationName: 'Dehna',
   manifest: '/manifest.json',
+  openGraph: {
+    type: 'website',
+    siteName: 'Dehna',
+    title: 'Dehna: a desk buddy who gets you moving',
+    description: DESCRIPTION,
+    url: '/',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Dehna: a desk buddy who gets you moving',
+    description: DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     title: 'Dehna',
