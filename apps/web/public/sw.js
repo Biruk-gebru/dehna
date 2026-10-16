@@ -1,5 +1,5 @@
-const CACHE = 'dehna-static-v1';
-const STATIC = ['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
+const CACHE = 'dehna-static-v2'; // bumped for the new icons; activate() clears the old cache
+const STATIC = ['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/icons/apple-touch-icon.png'];
 
 const OFFLINE_HTML = `<!DOCTYPE html>
 <html lang="en">
