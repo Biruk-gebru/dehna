@@ -32,8 +32,9 @@ const SEATED_DESK: Clip = {
   poses: workLoop(58, 0.66, {}),
 };
 
+// The chair stays in the scene, rolled back, so switching posture reads as standing up
 const STANDING_DESK: Clip = {
-  yaw: 70, shift: -8,
+  yaw: 70, shift: -8, chairZ: -34,
   props: [{ kind: 'desk', z: 20, height: 106, monitor: true }],
   poses: workLoop(46, 0.78, {}),
 };

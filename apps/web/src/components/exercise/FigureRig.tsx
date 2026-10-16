@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 //
@@ -79,6 +79,7 @@ export type Clip = {
   yaw?: number;   // camera angle in degrees: 0 front, 90 right side
   props?: Prop[];
   shift?: number; // horizontal framing offset for wide poses
+  chairZ?: number; // draw the office chair at this depth even when standing (seated clips default to 0)
   view?: [number, number, number, number]; // SVG viewBox override, e.g. a close-up on the face
 };
 
@@ -149,8 +150,19 @@ function flatten(p: BodyParams | PoseTarget, into: Flat = {}): Flat {
   return into;
 }
 
-function targetFlat(rest: BodyParams, t: PoseTarget): Flat {
-  return flatten(t, flatten(rest));
+// Scene values that change between clips (hip height, chair and desk position)
+// are springs too, so switching clips can animate standing up or sitting down.
+function sceneOf(clip: Clip): Flat {
+  const desk = clip.props?.find((p) => p.kind === 'desk');
+  return {
+    'scene.hip': clip.seated ? SEAT_HIP : STAND_HIP,
+    'scene.chair': clip.chairZ ?? 0,
+    'scene.desk': desk && 'height' in desk ? desk.height ?? 74 : 74,
+  };
+}
+
+function targetFlat(clip: Clip, t: PoseTarget): Flat {
+  return flatten(t, { ...flatten(clip.seated ? SEATED : STANDING), ...sceneOf(clip) });
 }
 
 // Seconds-to-target. The trunk leads and the hands trail a little behind,
@@ -160,6 +172,7 @@ function smoothTimeFor(key: string): number {
   if (key.startsWith('torso')) return 0.55;
   if (key.startsWith('head')) return 0.5;
   if (key.startsWith('face')) return 0.35;
+  if (key.startsWith('scene')) return 0.75; // a desk motor and a chair roll are a bit slower than a body
   if (key.startsWith('leg')) return 0.48;
   if (/\.(he|ha|hf|pron|grip)$/.test(key)) return 0.55;
   return 0.46;
@@ -357,10 +370,10 @@ function chairPrims(proj: Projector, cam: Camera, z: number): Prim[] {
   return prims;
 }
 
-function propPrims(proj: Projector, cam: Camera, prop: Prop): Prim[] {
+function propPrims(proj: Projector, cam: Camera, prop: Prop, f: Flat): Prim[] {
   switch (prop.kind) {
     case 'desk': {
-      const top = prop.height ?? 74;
+      const top = f['scene.desk'];
       const z0 = prop.z, z1 = prop.z + 42;
       const legs: V[] = [[-42, 0, z0 + 3], [42, 0, z0 + 3], [-42, 0, z1 - 3], [42, 0, z1 - 3]];
       const prims = [
@@ -391,12 +404,12 @@ function propPrims(proj: Projector, cam: Camera, prop: Prop): Prim[] {
 
 // ─── Skeleton → primitives ───────────────────────────────────────────────────
 
-function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Prim[] {
+function buildBody(f: Flat, proj: Projector, blink: number): Prim[] {
   const g = (k: string) => f[k];
   const prims: Prim[] = [];
   const colliders: Capsule[] = [];
 
-  const P: V = [g('pelvis.x'), (seated ? SEAT_HIP : STAND_HIP) + g('pelvis.y'), g('pelvis.z')];
+  const P: V = [g('pelvis.x'), g('scene.hip') + g('pelvis.y'), g('pelvis.z')];
   const hinge = rotX(g('torso.hinge'));
   const twist = g('torso.twist'), side = g('torso.side'), flex = g('torso.flex');
   const R1 = chain(hinge, rotY(twist * 0.4), rotZ(-side * 0.5), rotX(flex * 0.5));
@@ -595,13 +608,13 @@ function render(f: Flat, clip: Clip, blink: number): Prim[] {
   const shadow: Prim = { k: 'ellipse', at: shadowAt.at, rx: 36, ry: 36 * Math.sin(PITCH * RAD), c: SHADOW, d: 0 };
 
   const props: Prim[] = [];
-  if (clip.seated) props.push(...chairPrims(proj, cam, 0));
-  for (const p of clip.props ?? []) props.push(...propPrims(proj, cam, p));
+  if (clip.seated || clip.chairZ !== undefined) props.push(...chairPrims(proj, cam, f['scene.chair']));
+  for (const p of clip.props ?? []) props.push(...propPrims(proj, cam, p, f));
 
   return [
     shadow,
     ...props.sort(bySortedDepth),
-    ...buildBody(f, !!clip.seated, proj, blink).sort(bySortedDepth),
+    ...buildBody(f, proj, blink).sort(bySortedDepth),
   ];
 }
 
@@ -620,17 +633,16 @@ interface Props {
 }
 
 export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
-  const rest = clip.seated ? SEATED : STANDING;
-  const [prims, setPrims] = useState<Prim[]>(() =>
-    render(targetFlat(rest, clip.poses[0]?.target ?? {}), clip, 0),
-  );
+  const [prims, setPrims] = useState<Prim[]>(() => render(targetFlat(clip, clip.poses[0]?.target ?? {}), clip, 0));
+  // Springs outlive a clip change, so the figure moves from where it is into the
+  // new clip (standing up, or flowing into the next exercise) instead of snapping.
+  const springs = useRef<Record<string, { pos: number; vel: number }> | null>(null);
 
   useEffect(() => {
-    const restPose = clip.seated ? SEATED : STANDING;
-    const targets = clip.poses.map((p) => targetFlat(restPose, p.target));
+    const targets = clip.poses.map((p) => targetFlat(clip, p.target));
     const total = clip.poses.reduce((s, p) => s + p.durationMs, 0);
     if (isStatic || total <= 0) {
-      setPrims(render(targets[0] ?? flatten(restPose), clip, 0));
+      setPrims(render(targets[0] ?? targetFlat(clip, {}), clip, 0));
       return;
     }
     // Reduced motion: hold still on the longest pose, which is the clip's main hold
@@ -640,8 +652,9 @@ export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
       return;
     }
 
-    const state: Record<string, { pos: number; vel: number }> = {};
-    for (const [k, v] of Object.entries(flatten(restPose))) state[k] = { pos: v, vel: 0 };
+    const state = springs.current ?? {};
+    for (const [k, v] of Object.entries(targetFlat(clip, {}))) state[k] ??= { pos: v, vel: 0 };
+    springs.current = state;
 
     let rafId: number;
     let prev: number | null = null;
