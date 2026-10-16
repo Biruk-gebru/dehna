@@ -12,6 +12,8 @@ import { TimerRing } from '@/components/timer/TimerRing';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { PostureToggle } from '@/components/timer/PostureToggle';
+import { PostureSuggestionCard } from '@/components/timer/PostureSuggestionCard';
+import { suggestPosture } from '@/lib/posture';
 import { RoutinePlayer } from '@/components/exercise/RoutinePlayer';
 import type { Exercise, Posture } from '@/types';
 
@@ -62,8 +64,16 @@ export default function WorkPage() {
   const liveRef = useRef<{ timerState: TimerState; elapsed: number; appMode: AppMode } | null>(null);
 
   const { startSession, recordBreak, recordPosture, endSession } = useSessionHistory();
-  const { posture, setPosture } = usePosture();
+  const { posture, since, snoozedUntil, setPosture, snooze } = usePosture();
   const hasDesk = prefs?.hasStandingDesk ?? false;
+
+  // Re-check the posture suggestion every 30 s
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasDesk) return;
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [hasDesk]);
   const { generateRoutine } = useExercises(prefs);
 
   const handleWorkComplete = useCallback(() => {
@@ -210,6 +220,15 @@ export default function WorkPage() {
     );
   }
 
+  const suggestion = hasDesk && now >= snoozedUntil
+    ? suggestPosture({
+        posture,
+        minutesIn: Math.floor((now - since) / 60_000),
+        problemAreas: prefs.problemAreas,
+        hour: new Date(now).getHours(),
+      })
+    : null;
+
   const timerLabel =
     mode === 'idle' ? 'ready when you are' : mode === 'paused' ? 'paused' : 'remaining';
 
@@ -231,6 +250,14 @@ export default function WorkPage() {
       </TimerRing>
 
       {hasDesk && <PostureToggle posture={posture} onChange={handlePosture} />}
+
+      {suggestion && (
+        <PostureSuggestionCard
+          suggestion={suggestion}
+          onAccept={() => handlePosture(suggestion.to)}
+          onDismiss={snooze}
+        />
+      )}
 
       <TimerControls
         mode={mode}
