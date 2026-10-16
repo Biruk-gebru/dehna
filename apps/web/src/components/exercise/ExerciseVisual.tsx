@@ -421,7 +421,7 @@ const PALMING = eyeClip([
     durationMs: 180,
   })),
   {
-    target: merge(both({ e: 142, a: 132, r: 0.5, pe: 40, pa: 0, hf: 1, he: 160, ha: 160, pron: -90, grip: 0.5 }), CALM, { head: { nod: 4 } }),
+    target: merge(both({ e: 142, a: 139, r: 0.5, pe: 40, pa: 0, hf: 1, he: 160, ha: 168, pron: -90, grip: 0.35 }), CALM, { head: { nod: 4 } }),
     durationMs: 6000,
   },
 ]);
