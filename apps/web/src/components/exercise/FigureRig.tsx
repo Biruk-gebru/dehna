@@ -605,6 +605,10 @@ function render(f: Flat, clip: Clip, blink: number): Prim[] {
   ];
 }
 
+// Every coordinate goes out rounded. The server (Node) and the browser can
+// disagree in the last digit of sin/cos, and raw floats would then fail hydration.
+const fix = (v: number) => v.toFixed(2);
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface Props {
@@ -708,7 +712,7 @@ export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
             return (
               <polyline
                 key={i}
-                points={p.pts.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' ')}
+                points={p.pts.map((q) => q.map(fix).join(',')).join(' ')}
                 style={{ fill: 'none', stroke: p.c }}
                 strokeWidth={p.w}
                 strokeLinecap="round"
@@ -716,14 +720,14 @@ export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
               />
             );
           case 'circle':
-            return <circle key={i} cx={p.at[0]} cy={p.at[1]} r={p.r} style={{ fill: p.c }} />;
+            return <circle key={i} cx={fix(p.at[0])} cy={fix(p.at[1])} r={fix(p.r)} style={{ fill: p.c }} />;
           case 'ellipse':
-            return <ellipse key={i} cx={p.at[0]} cy={p.at[1]} rx={p.rx} ry={p.ry} style={{ fill: p.c }} />;
+            return <ellipse key={i} cx={fix(p.at[0])} cy={fix(p.at[1])} rx={fix(p.rx)} ry={fix(p.ry)} style={{ fill: p.c }} />;
           case 'curve':
             return (
               <path
                 key={i}
-                d={`M${p.from[0].toFixed(2)},${p.from[1].toFixed(2)} Q${p.ctrl[0].toFixed(2)},${p.ctrl[1].toFixed(2)} ${p.to[0].toFixed(2)},${p.to[1].toFixed(2)}`}
+                d={`M${p.from.map(fix).join(',')} Q${p.ctrl.map(fix).join(',')} ${p.to.map(fix).join(',')}`}
                 style={{ fill: 'none', stroke: p.c }}
                 strokeWidth={p.w}
                 strokeLinecap="round"
@@ -733,7 +737,7 @@ export function FigureRig({ clip, static: isStatic, size = 200 }: Props) {
             return (
               <polygon
                 key={i}
-                points={p.pts.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' ')}
+                points={p.pts.map((q) => q.map(fix).join(',')).join(' ')}
                 style={{ fill: p.c, stroke: p.c }}
                 strokeWidth={p.w ?? 0.8}
                 strokeLinejoin="round"
