@@ -435,10 +435,10 @@ textarea {
 }
 
 .home-h1 {
-  font-size: clamp(3rem, 9.5vw, 8.4rem);
+  font-size: clamp(2.6rem, 6.2vw, 5.4rem);
   font-weight: var(--font-weight-light);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
+  line-height: 1;
+  letter-spacing: -0.03em;
   color: var(--color-text);
   max-width: 10.5ch;
 }
@@ -482,7 +482,7 @@ textarea {
     align-self: end;
     /* Two headline lines down (font-size × line-height × 2), so the stage meets
        the short last line instead of covering words */
-    margin-top: min(calc(9.5vw * 0.95 * 2.05), 16.4rem);
+    margin-top: min(calc(6.2vw * 2.05), 11rem);
     transform: rotate(-2.5deg);
     --bubble-tilt: 2.5deg; /* the bubble undoes the tilt so it reads level */
   }
