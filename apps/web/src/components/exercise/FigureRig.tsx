@@ -240,6 +240,8 @@ const HAIR = '#2f231c';
 const SHIRT = 'var(--color-primary, #d3643b)';
 const PANTS = '#3e4756';
 const SHOE = '#2a2522';
+// A touch darker, so a sleeve crossing in front of the chest doesn't vanish into it
+const SLEEVE = 'color-mix(in srgb, var(--color-primary, #d3643b) 90%, #000)';
 const SHADOW = 'rgba(40, 30, 20, 0.10)';
 const PROP_TOP = '#dcd2c4';
 const PROP_FRONT = '#c7b9a8';
@@ -255,7 +257,7 @@ type Prim =
   | { k: 'line'; pts: P2[]; w: number; c: string; d: number }
   | { k: 'circle'; at: P2; r: number; c: string; d: number }
   | { k: 'ellipse'; at: P2; rx: number; ry: number; c: string; d: number }
-  | { k: 'poly'; pts: P2[]; c: string; d: number }
+  | { k: 'poly'; pts: P2[]; c: string; d: number; w?: number } // w rounds the corners
   | { k: 'curve'; from: P2; ctrl: P2; to: P2; w: number; c: string; d: number };
 
 type Camera = { yaw: number; shift: number };
@@ -401,13 +403,19 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
   const M = add(P, apply(R1, [0, LUMBAR, 0]));
   const C = add(M, apply(R2, [0, CHEST, 0])); // neck base
 
-  // Trunk: pants block at the hips, shirt over a curved spine, then waist and
-  // chest bars that give the front view its taper and collapse in side view.
-  prims.push(line(proj, [add(P, [-HIP_W, 0, 0]), add(P, [HIP_W, 0, 0])], 16, PANTS, -4.5)); // under the shirt hem
+  // Trunk: pants block at the hips, a capsule along the curved spine that gives
+  // the body its depth side-on, and one smooth outline for its width head-on.
+  prims.push(line(proj, [add(P, [-HIP_W, 0, 0]), add(P, [HIP_W, 0, 0])], 16, PANTS, -8)); // always under the shirt hem
   prims.push(line(proj, [add(P, apply(hinge, [0, 8, 0])), M, add(C, apply(R2, [0, -7, 0]))], 24, SHIRT, -4));
-  prims.push(line(proj, [add(M, apply(R1, [-5, 0, 0])), add(M, apply(R1, [5, 0, 0]))], 18, SHIRT, -3.9));
-  const chestMid = add(C, apply(R2, [0, -10, 0]));
-  prims.push(line(proj, [add(chestMid, apply(R2, [-8, 0, 0])), add(chestMid, apply(R2, [8, 0, 0]))], 17, SHIRT, -3.8));
+  const torsoEdge = (x: number): V[] => [
+    add(P, apply(hinge, [x * 14, 2, 0])),
+    add(M, apply(R1, [x * 12.5, 0, 0])),
+    add(C, apply(R2, [x * 15, -14, 0])),
+    add(C, apply(R2, [x * 16, -6, 0])),
+    add(C, apply(R2, [x * 12, -1, 0])),
+  ];
+  const outline = [...torsoEdge(1), ...torsoEdge(-1).reverse()].map(proj);
+  prims.push({ k: 'poly', pts: outline.map((q) => q.at), c: SHIRT, w: 5, d: outline.reduce((t, q) => t + q.z, 0) / outline.length - 3.95 });
 
   const shoulder = (s: number, arm: string): V =>
     add(C, apply(R2, [s * SHOULDER_W, -3 + g(`${arm}.sy`), g(`${arm}.sz`)]));
@@ -531,7 +539,7 @@ function buildBody(f: Flat, seated: boolean, proj: Projector, blink: number): Pr
     // The sleeve reuses the upper arm's first two pieces exactly, so each sleeve
     // piece sorts with (just above) the skin piece it covers.
     prims.push(...limb(proj, S, E, 8.5, SKIN, 0, 4));
-    prims.push(...limb(proj, S, lerp(S, E, 0.5), 10.5, SHIRT, 0.05, 2));
+    prims.push(...limb(proj, S, lerp(S, E, 0.5), 10.5, SLEEVE, 0.05, 2));
     prims.push(...limb(proj, E, W, 7.5, SKIN));
 
     const follow = norm(sub(W, E));
@@ -722,7 +730,7 @@ export function FigureRig({ clip, static: isStatic }: Props) {
                 key={i}
                 points={p.pts.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' ')}
                 style={{ fill: p.c, stroke: p.c }}
-                strokeWidth={0.8}
+                strokeWidth={p.w ?? 0.8}
                 strokeLinejoin="round"
               />
             );

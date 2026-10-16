@@ -111,9 +111,9 @@ const CROSS_BODY: Clip = {
   }, 2400, 1000),
 };
 
-// Hands meet just in front of the head. Aiming slightly forward (a < 180) also
-// makes the arms rise in front of the body instead of sweeping across the face.
-const ARMS_UP = merge(both({ e: 162, a: 122, r: 0.98, pe: 90, pa: 0, grip: 0.9 }), { face: { gy: 0.8 } });
+// Hands meet just above the head, arms beside the ears. Aiming a little forward
+// (a < 180) makes the arms rise in front of the body, not sweep across the face.
+const ARMS_UP = merge(both({ e: 168, a: 150, r: 0.98, pe: 90, pa: 0, grip: 0.9 }), { face: { gy: 0.8 } });
 const OVERHEAD_REACH: Clip = {
   yaw: 0,
   poses: [
