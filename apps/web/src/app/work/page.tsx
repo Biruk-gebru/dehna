@@ -243,10 +243,14 @@ export default function WorkPage() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 'var(--space-5)',
-        padding: 'var(--space-6) var(--space-6) var(--space-9)',
+        padding: 'var(--space-6) var(--space-6) var(--space-5)',
       }}
     >
-      <DeskAvatar posture={hasDesk ? posture : 'sitting'} working={mode === 'running'} />
+      {/* The auto margins here and on the nav centre the content in any spare
+          height, and let the nav follow it when the screen is too short. */}
+      <div style={{ marginTop: 'auto' }}>
+        <DeskAvatar posture={hasDesk ? posture : 'sitting'} working={mode === 'running'} />
+      </div>
 
       <TimerRing progress={timer.progress} size={200}>
         <TimerDisplay formattedTime={timer.formattedRemaining} label={timerLabel} />
@@ -270,16 +274,7 @@ export default function WorkPage() {
         onStop={handleStop}
       />
 
-      <nav
-        style={{
-          position: 'fixed',
-          bottom: 'var(--space-5)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: 'var(--space-3)',
-        }}
-      >
+      <nav style={{ marginTop: 'auto', paddingTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)' }}>
         <Link href="/" className="btn btn-ghost btn-sm">Home</Link>
         <Link href="/exercises" className="btn btn-ghost btn-sm">Exercises</Link>
         <Link href="/history" className="btn btn-ghost btn-sm">History</Link>
