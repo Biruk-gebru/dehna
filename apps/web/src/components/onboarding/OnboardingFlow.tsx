@@ -17,10 +17,11 @@ interface OnboardingFlowProps {
   onComplete: (data: OnboardingData) => Promise<void>;
 }
 
-type Step = 'welcome' | 'areas' | 'interval' | 'desk' | 'difficulty';
+// No welcome step: the landing page already introduces Dehna
+type Step = 'areas' | 'interval' | 'desk' | 'difficulty';
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('areas');
   const [areas, setAreas]         = useState<ProblemArea[]>(['general']);
   const [interval, setInterval]   = useState(25);
   const [difficulty, setDifficulty] = useState<'gentle' | 'moderate'>('gentle');
@@ -47,27 +48,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     padding: 'var(--space-6)',
     gap: 'var(--space-7)',
   };
-
-  if (step === 'welcome') {
-    return (
-      <main style={sharedLayout}>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '4rem', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)', lineHeight: 'var(--line-height-tight)' }}>
-            ደህና
-          </h1>
-          <p style={{ fontSize: 'var(--font-size-lg)', color: 'var(--color-text-muted)', marginTop: 'var(--space-3)', fontWeight: 'var(--font-weight-light)' }}>
-            Be well at your desk.
-          </p>
-        </div>
-        <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-muted)', textAlign: 'center', maxWidth: 360, lineHeight: 'var(--line-height-relaxed)' }}>
-          Short movement breaks, tailored to how your body feels — so every pause actually helps.
-        </p>
-        <Button onClick={() => setStep('areas')} style={{ minWidth: 180 }}>
-          Get started
-        </Button>
-      </main>
-    );
-  }
 
   if (step === 'areas') {
     return (
