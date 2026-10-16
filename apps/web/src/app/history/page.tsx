@@ -26,6 +26,19 @@ function fmtDay(iso: string) {
   return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
+// Minutes spent standing in a session: each posture change lasts until the next one or the session's end.
+function standingMinutes(s: WorkSession) {
+  const changes = s.postures ?? [];
+  const end = new Date(s.endedAt ?? s.startedAt).getTime();
+  let ms = 0;
+  changes.forEach((c, i) => {
+    if (c.posture !== 'standing') return;
+    const until = i + 1 < changes.length ? new Date(changes[i + 1].at).getTime() : end;
+    ms += Math.max(0, until - new Date(c.at).getTime());
+  });
+  return Math.round(ms / 60000);
+}
+
 function calcStats(sessions: WorkSession[]) {
   const todayStr = new Date().toISOString().slice(0, 10);
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -171,18 +184,27 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {Object.entries(grouped).map(([day, daySessions]) => (
+      {Object.entries(grouped).map(([day, daySessions]) => {
+        const tracked = daySessions.some((s) => s.postures?.length);
+        const standing = daySessions.reduce((sum, s) => sum + standingMinutes(s), 0);
+        return (
         <section key={day} style={{ marginBottom: 'var(--space-6)' }}>
-          <h2
-            style={{
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: 'var(--font-weight-medium)',
-              color: 'var(--color-text-muted)',
-              marginBottom: 'var(--space-3)',
-            }}
-          >
-            {fmtDay(day + 'T12:00:00')}
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 'var(--space-3)' }}>
+            <h2
+              style={{
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              {fmtDay(day + 'T12:00:00')}
+            </h2>
+            {tracked && (
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                {fmt(standing)} standing
+              </span>
+            )}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {daySessions.map((s) => {
               const total = s.breaks.length;
@@ -247,7 +269,8 @@ export default function HistoryPage() {
             })}
           </div>
         </section>
-      ))}
+        );
+      })}
       </div>
     </main>
   );
