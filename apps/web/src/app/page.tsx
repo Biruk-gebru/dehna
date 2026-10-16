@@ -68,8 +68,9 @@ export default function Home() {
         <div>
           <h2 className="home-h2">Free, and it stays on your device.</h2>
           <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', lineHeight: 'var(--line-height-relaxed)', maxWidth: 420, marginTop: 'var(--space-3)' }}>
-            No account, no sign-up, no tracking. Your sessions live in this browser and you can
-            export or wipe them from Settings whenever you like.
+            No account, no sign-up, no ads. Your sessions and stretches never leave this browser, and
+            you can export or wipe them from Settings whenever you like. We only count anonymous page
+            visits, with no cookies, to see what&apos;s useful.
           </p>
           <Link href={startHref} className="btn btn-primary" style={{ padding: '14px 32px', marginTop: 'var(--space-5)' }}>
             {startLabel}

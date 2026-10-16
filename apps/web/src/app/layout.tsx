@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google';
 import '../styles/globals.css';
 import { PrefsProvider } from '@/context/PrefsContext';
@@ -74,6 +75,8 @@ export default function RootLayout({
           <InstallPrompt />
           {children}
         </PrefsProvider>
+        {/* Anonymous, cookie-free page-view counts on Vercel; does nothing in development */}
+        <Analytics />
       </body>
     </html>
   );
