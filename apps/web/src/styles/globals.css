@@ -236,6 +236,57 @@ textarea {
   color: var(--color-text);
 }
 
+/* ── Work nav: icon over label, four equal columns that fit any phone ── */
+
+.work-nav {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+  max-width: 420px;
+}
+
+.work-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.work-nav-link:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-hover);
+}
+
+/* ── Touch screens and phones: comfortable 44px targets (Apple's minimum) ── */
+
+@media (pointer: coarse), (max-width: 760px) {
+  .btn-sm,
+  .filter-chip,
+  .segmented button,
+  .home-anatomy button {
+    min-height: 44px;
+  }
+
+  nav a,
+  .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .range-input::-webkit-slider-thumb { width: 28px; height: 28px; }
+  .range-input::-moz-range-thumb { width: 28px; height: 28px; }
+}
+
 /* ── Body area picker ── */
 
 .area-picker {
@@ -262,10 +313,20 @@ textarea {
 /* Hollow rings until picked, so the figure stays visible underneath */
 .area-spot {
   position: absolute;
+  width: 36px; /* hit area; the visible ring is drawn by ::before */
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  padding: 0;
+  border: none;
+  background: none;
+  display: grid;
+  place-items: center;
+}
+
+.area-spot::before {
+  content: '';
   width: 18px;
   height: 18px;
-  margin: -9px 0 0 -9px;
-  padding: 0;
   border-radius: 50%;
   border: 2px solid var(--color-surface); /* light edge plus a teal ring reads on the teal shirt and the sand */
   box-shadow: 0 0 0 2px var(--color-primary);
@@ -273,11 +334,11 @@ textarea {
   transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
-.area-spot:hover {
+.area-spot:hover::before {
   transform: scale(1.15);
 }
 
-.area-spot[aria-pressed='true'] {
+.area-spot[aria-pressed='true']::before {
   background-color: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 6px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
@@ -563,7 +624,7 @@ textarea {
 
 .home-stage-dots {
   display: flex;
-  gap: 6px;
+  gap: 0;
   margin-top: var(--space-4);
 }
 
@@ -578,17 +639,26 @@ textarea {
 }
 
 .home-demo-dot {
-  width: 7px;
-  height: 7px;
+  width: 24px; /* hit area; the visible dot is drawn by ::before */
+  height: 24px;
   padding: 0;
   border: none;
+  background: none;
+  display: grid;
+  place-items: center;
+}
+
+.home-demo-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--color-text-muted);
   opacity: 0.3;
   transition: opacity 0.2s, background-color 0.2s;
 }
 
-.home-demo-dot[aria-current='true'] {
+.home-demo-dot[aria-current='true']::before {
   background-color: var(--color-primary);
   opacity: 1;
 }
@@ -654,6 +724,11 @@ textarea {
     width: 84px;
     border-top: 2px solid var(--color-primary);
   }
+}
+
+.home-hurts-figure svg {
+  width: min(300px, 74vw);
+  height: auto;
 }
 
 .home-hurts-figure {

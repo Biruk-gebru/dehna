@@ -321,6 +321,7 @@ export default function ExercisesPage() {
             return (
               <button
                 key={t}
+                className="filter-chip"
                 onClick={() => toggleType(t)}
                 aria-pressed={active}
                 style={{
@@ -349,6 +350,7 @@ export default function ExercisesPage() {
             return (
               <button
                 key={a}
+                className="filter-chip"
                 onClick={() => toggleArea(a)}
                 aria-pressed={active}
                 style={{
